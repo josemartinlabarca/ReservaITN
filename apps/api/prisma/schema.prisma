@@ -1,0 +1,238 @@
+// Modelo de datos ReservaITN (E2 / WBS 1.3.1)
+// Cubre: usuarios, recursos, reservas, aprobaciones, trazabilidad, notificaciones,
+// importación, inventario y mantención.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  ESTUDIANTE
+  DOCENTE
+  DIRECTOR_CARRERA
+  DIRECCION_ACADEMICA
+  SUBDIRECCION
+  DATD
+  OPERACIONES
+  ASEO_MANTENCION
+  ADMIN_TI
+}
+
+enum TipoRecurso {
+  SALA
+  LABORATORIO
+}
+
+enum EstadoReserva {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  CANCELADA
+  LIBERADA
+}
+
+enum OrigenReserva {
+  SOLICITUD
+  PLANIFICACION // cargada desde el Excel semestral
+  MANTENCION // bloqueo para aseo/mantención: también participa en el anti-choques
+}
+
+enum SeveridadDanio {
+  BAJA
+  MEDIA
+  ALTA
+}
+
+enum EstadoDanio {
+  ABIERTO
+  EN_PROCESO
+  RESUELTO
+}
+
+model Sede {
+  id        String   @id @default(uuid()) @db.Uuid
+  nombre    String   @unique
+  direccion String?
+  salas     Sala[]
+  creadoEn  DateTime @default(now()) @map("creado_en")
+
+  @@map("sedes")
+}
+
+model Carrera {
+  id               String    @id @default(uuid()) @db.Uuid
+  codigo           String    @unique
+  nombre           String
+  usuarios         Usuario[]
+  salasExclusivas  Sala[]
+
+  @@map("carreras")
+}
+
+model Usuario {
+  id            String    @id @default(uuid()) @db.Uuid
+  rut           String    @unique
+  email         String    @unique
+  nombre        String
+  rol           Rol
+  passwordHash  String    @map("password_hash")
+  activo        Boolean   @default(true)
+  carreraId     String?   @map("carrera_id") @db.Uuid
+  carrera       Carrera?  @relation(fields: [carreraId], references: [id])
+  creadoEn      DateTime  @default(now()) @map("creado_en")
+
+  reservasSolicitadas Reserva[]       @relation("solicitante")
+  reservasAprobadas   Reserva[]       @relation("aprobador")
+  eventos             EventoReserva[]
+  notificaciones      Notificacion[]
+  conteos             ConteoInventario[]
+  danios              ReporteDanio[]
+  importaciones       Importacion[]
+
+  @@map("usuarios")
+}
+
+model Sala {
+  id                  String       @id @default(uuid()) @db.Uuid
+  codigo              String
+  nombre              String
+  tipo                TipoRecurso
+  capacidad           Int
+  equipamiento        String[]     @default([])
+  activa              Boolean      @default(true)
+  sedeId              String       @map("sede_id") @db.Uuid
+  sede                Sede         @relation(fields: [sedeId], references: [id])
+  carreraExclusivaId  String?      @map("carrera_exclusiva_id") @db.Uuid
+  carreraExclusiva    Carrera?     @relation(fields: [carreraExclusivaId], references: [id])
+
+  reservas      Reserva[]
+  inventario    ItemInventario[]
+  danios        ReporteDanio[]
+
+  @@unique([sedeId, codigo])
+  @@map("salas")
+}
+
+/// Garantía anti-choques (R1): restricción EXCLUDE en la migración SQL
+/// "reservas_sin_choque": ninguna sala puede tener dos reservas APROBADAS que se solapen.
+model Reserva {
+  id             String         @id @default(uuid()) @db.Uuid
+  salaId         String         @map("sala_id") @db.Uuid
+  sala           Sala           @relation(fields: [salaId], references: [id])
+  solicitanteId  String         @map("solicitante_id") @db.Uuid
+  solicitante    Usuario        @relation("solicitante", fields: [solicitanteId], references: [id])
+  aprobadorId    String?        @map("aprobador_id") @db.Uuid
+  aprobador      Usuario?       @relation("aprobador", fields: [aprobadorId], references: [id])
+  inicio         DateTime       @db.Timestamptz(3)
+  fin            DateTime       @db.Timestamptz(3)
+  motivo         String
+  asistentes     Int
+  estado         EstadoReserva  @default(PENDIENTE)
+  origen         OrigenReserva  @default(SOLICITUD)
+  decididaEn     DateTime?      @map("decidida_en")
+  checkInEn      DateTime?      @map("check_in_en") // para liberar reservas no usadas (R18)
+  importacionId  String?        @map("importacion_id") @db.Uuid
+  importacion    Importacion?   @relation(fields: [importacionId], references: [id])
+  creadaEn       DateTime       @default(now()) @map("creada_en")
+  actualizadaEn  DateTime       @updatedAt @map("actualizada_en")
+
+  eventos        EventoReserva[]
+  notificaciones Notificacion[]
+
+  @@index([salaId, inicio])
+  @@index([estado])
+  @@map("reservas")
+}
+
+/// Trazabilidad (R7 / E9): bitácora inmutable de cada cambio de estado.
+model EventoReserva {
+  id              String          @id @default(uuid()) @db.Uuid
+  reservaId       String          @map("reserva_id") @db.Uuid
+  reserva         Reserva         @relation(fields: [reservaId], references: [id])
+  actorId         String          @map("actor_id") @db.Uuid
+  actor           Usuario         @relation(fields: [actorId], references: [id])
+  accion          String          // CREADA, APROBADA, RECHAZADA, CANCELADA, LIBERADA, CHECK_IN
+  estadoAnterior  EstadoReserva?  @map("estado_anterior")
+  estadoNuevo     EstadoReserva   @map("estado_nuevo")
+  comentario      String?
+  creadoEn        DateTime        @default(now()) @map("creado_en")
+
+  @@index([reservaId])
+  @@map("eventos_reserva")
+}
+
+model Notificacion {
+  id         String    @id @default(uuid()) @db.Uuid
+  usuarioId  String    @map("usuario_id") @db.Uuid
+  usuario    Usuario   @relation(fields: [usuarioId], references: [id])
+  reservaId  String?   @map("reserva_id") @db.Uuid
+  reserva    Reserva?  @relation(fields: [reservaId], references: [id])
+  titulo     String
+  cuerpo     String
+  leida      Boolean   @default(false)
+  enviadaEn  DateTime? @map("enviada_en") // correo / push
+  creadaEn   DateTime  @default(now()) @map("creada_en")
+
+  @@index([usuarioId, leida])
+  @@map("notificaciones")
+}
+
+/// Cada carga del Excel de planificación (E5): permite medir el % importado sin intervención.
+model Importacion {
+  id             String    @id @default(uuid()) @db.Uuid
+  archivoNombre  String    @map("archivo_nombre")
+  usuarioId      String    @map("usuario_id") @db.Uuid
+  usuario        Usuario   @relation(fields: [usuarioId], references: [id])
+  totalFilas     Int       @map("total_filas")
+  filasOk        Int       @map("filas_ok")
+  errores        Json      @default("[]")
+  creadaEn       DateTime  @default(now()) @map("creada_en")
+  reservas       Reserva[]
+
+  @@map("importaciones")
+}
+
+model ItemInventario {
+  id                String   @id @default(uuid()) @db.Uuid
+  salaId            String   @map("sala_id") @db.Uuid
+  sala              Sala     @relation(fields: [salaId], references: [id])
+  nombre            String
+  cantidadEsperada  Int      @map("cantidad_esperada")
+  conteos           ConteoInventario[]
+
+  @@unique([salaId, nombre])
+  @@map("items_inventario")
+}
+
+model ConteoInventario {
+  id         String         @id @default(uuid()) @db.Uuid
+  itemId     String         @map("item_id") @db.Uuid
+  item       ItemInventario @relation(fields: [itemId], references: [id])
+  usuarioId  String         @map("usuario_id") @db.Uuid
+  usuario    Usuario        @relation(fields: [usuarioId], references: [id])
+  cantidad   Int
+  creadoEn   DateTime       @default(now()) @map("creado_en")
+
+  @@map("conteos_inventario")
+}
+
+model ReporteDanio {
+  id              String          @id @default(uuid()) @db.Uuid
+  salaId          String          @map("sala_id") @db.Uuid
+  sala            Sala            @relation(fields: [salaId], references: [id])
+  reportadoPorId  String          @map("reportado_por_id") @db.Uuid
+  reportadoPor    Usuario         @relation(fields: [reportadoPorId], references: [id])
+  descripcion     String
+  severidad       SeveridadDanio
+  fotoUrl         String?         @map("foto_url")
+  estado          EstadoDanio     @default(ABIERTO)
+  creadoEn        DateTime        @default(now()) @map("creado_en")
+  resueltoEn      DateTime?       @map("resuelto_en")
+
+  @@map("reportes_danio")
+}

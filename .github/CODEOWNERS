@@ -1,0 +1,9 @@
+# Revisores por carpeta. Reemplazar <usuario-github> por los usuarios reales y descomentar.
+# * @<usuario-gonzalo>
+# /apps/api/            @<usuario-jose>
+# /packages/shared/     @<usuario-jose>
+# /apps/api/prisma/     @<usuario-jose> @<usuario-gonzalo>
+# /apps/web/            @<usuario-benjamin>
+# /apps/mobile/         @<usuario-benjamin>
+# /docs/                @<usuario-benjamin> @<usuario-braulio>
+# /.github/             @<usuario-gonzalo>

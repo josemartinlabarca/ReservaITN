@@ -1,0 +1,32 @@
+name: Solicitud de cambio de alcance
+description: Proceso de control de cambios (Plan de Gestión del Alcance §7.3)
+labels: ["cambio-alcance"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Paso 1–2 (Solicitud y Registro).** Ningún cambio entra al sprint sin la aprobación de la patrocinadora.
+  - type: input
+    id: solicitante
+    attributes:
+      label: Solicitante y fecha
+    validations: { required: true }
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Descripción y motivo del cambio
+    validations: { required: true }
+  - type: textarea
+    id: impacto
+    attributes:
+      label: "Paso 3: evaluación de impacto (máx. 3 días hábiles)"
+      value: |
+        - Plazo:
+        - Costo (horas × $9.000):
+        - Calidad / riesgos:
+        - ¿Supera 10 % del presupuesto o 2 semanas de plazo? (requiere aprobación formal)
+  - type: dropdown
+    id: decision
+    attributes:
+      label: "Paso 4: decisión de la patrocinadora"
+      options: [Pendiente, Aprobado, Rechazado, Diferido a fase 2]

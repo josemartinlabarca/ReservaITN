@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "ReservaITN",
+    "slug": "reservaitn",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": { "bundleIdentifier": "cl.itn.reservaitn", "supportsTablet": false },
+    "android": { "package": "cl.itn.reservaitn" },
+    "extra": { "apiUrl": "http://localhost:3001/api" }
+  }
+}

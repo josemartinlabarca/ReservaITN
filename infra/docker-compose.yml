@@ -1,0 +1,19 @@
+# Entorno local: PostgreSQL + Mailpit (bandeja de correo falsa para probar notificaciones)
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: reservaitn
+      POSTGRES_PASSWORD: reservaitn
+      POSTGRES_DB: reservaitn
+    ports: ["5432:5432"]
+    volumes: [db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reservaitn"]
+      interval: 5s
+      retries: 10
+  mail:
+    image: axllent/mailpit:v1.21
+    ports: ["8025:8025", "1025:1025"]
+volumes:
+  db_data:

@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: reservaitn
+          POSTGRES_PASSWORD: reservaitn
+          POSTGRES_DB: reservaitn_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U reservaitn"
+          --health-interval 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://reservaitn:reservaitn@localhost:5432/reservaitn_test
+      TZ: America/Santiago
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Compilar, tipos y pruebas unitarias
+        run: pnpm turbo run build typecheck test
+      - name: Migraciones
+        run: pnpm --filter @reservaitn/api prisma:deploy
+      - name: Pruebas de integración (anti-choques, 200 casos)
+        run: pnpm --filter @reservaitn/api test:db

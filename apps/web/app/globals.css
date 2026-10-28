@@ -1,0 +1,35 @@
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --text: #16191f; --muted: #5d6573; --border: #dde1e7;
+  --accent: #1f5fbf; --accent-text: #ffffff; --ok: #1c7c4a; --warn: #a35d00; --danger: #b42318;
+  --bar: #1f5fbf; --bar-bg: #e6ecf5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418; --surface: #1a1e24; --text: #e8eaee; --muted: #9aa3b0; --border: #2c323b;
+    --accent: #6ea3f0; --accent-text: #0b1220; --ok: #5cc28c; --warn: #e3a64a; --danger: #f07a6e;
+    --bar: #6ea3f0; --bar-bg: #24303f;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+a { color: var(--accent); }
+header.top { display: flex; gap: 1.5rem; align-items: center; padding: 0.75rem 1.5rem; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+header.top strong { margin-right: auto; }
+main { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+.grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.kpi .valor { font-size: 2rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.kpi .etiqueta { color: var(--muted); font-size: 0.875rem; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 500; font-size: 0.875rem; }
+tr.click { cursor: pointer; } tr.click:hover { background: var(--bg); }
+.barra { background: var(--bar-bg); border-radius: 4px; height: 10px; min-width: 120px; }
+.barra > span { display: block; height: 100%; background: var(--bar); border-radius: 4px; }
+form.fila { display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap; margin-bottom: 1rem; }
+label { display: grid; gap: 0.25rem; font-size: 0.875rem; color: var(--muted); }
+input, select { padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; }
+button { padding: 0.5rem 1rem; border-radius: 6px; border: 0; background: var(--accent); color: var(--accent-text); font: inherit; cursor: pointer; }
+button.sec { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.error { color: var(--danger); }
+.ok { color: var(--ok); }
