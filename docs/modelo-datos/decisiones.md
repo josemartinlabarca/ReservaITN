@@ -1,5 +1,7 @@
 # Decisiones del modelo de datos
 
+Ver también: [normalizacion.md](normalizacion.md) (verificación formal, FNBC).
+
 Registro de las decisiones tomadas por el equipo en las rondas de diseño.
 Cada decisión indica su motivo y su efecto en el modelo.
 
@@ -57,7 +59,7 @@ Cada decisión indica su motivo y su efecto en el modelo.
 | Claves primarias | `id uuid` generado por la base (`gen_random_uuid()`); las tablas de relación N:M usan clave compuesta |
 | Claves naturales | Todo catálogo y entidad maestra tiene un `codigo` único (ej. sala `A-101`, período `2027-1`) para importar y cruzar datos |
 | Fechas | `timestamptz` (UTC); fechas sin hora en `date`, horas del día en `time` |
-| Auditoría | Toda tabla maestra lleva `creado_en`, `creado_por`, `actualizado_en`, `actualizado_por` |
+| Auditoría | Las tablas llevan `creado_en` (y `actualizado_en` si se editan). Quién hizo cada cambio queda en `auditoria.evento`, no en cada tabla (N2) |
 | Borrado | Lógico (`activo = false`) en tablas maestras; las transacciones nunca se borran, cambian de estado |
 | Enum o catálogo | **Enum** si el código depende del valor (estados de una reserva); **tabla catálogo** si el cliente puede agregar valores (tipos de espacio, equipamiento) |
 | Parámetros de negocio | Tabla `parametro` (ej. minutos para liberar una reserva), no constantes en el código |
@@ -185,10 +187,10 @@ erDiagram
 | `patron_recurrencia` | solicitud_id, dia_semana (1–7), hora_inicio, hora_fin | PK(solicitud_id, dia_semana, hora_inicio); CHECK hora_fin > hora_inicio. Una fila por día: "lunes 8–10 y miércoles 10–12" son dos filas (1FN, en vez de una lista de días) |
 | `reserva` | solicitud_id, espacio_id, inicio, fin, estado, expira_en | **EXCLUDE** (espacio_id =, tstzrange(inicio, fin) &&) WHERE estado IN (`PENDIENTE`, `APROBADA`); CHECK fin > inicio; CHECK expira_en solo si `PENDIENTE` |
 | `regla_aprobacion` | tipo_espacio_id, rol_solicitante_id, tipo_actividad_id (nulos = "cualquiera"), accion (`AUTO_APROBAR`, `REQUIERE_APROBACION`, `PROHIBIDO`), rol_aprobador_id, ambito_aprobador (`CARRERA_SOLICITANTE`, `CARRERA_ESPACIO`, `INSTITUCION`), prioridad | Gana la regla de mayor prioridad que coincida; UNIQUE NULLS NOT DISTINCT(tipo_espacio, rol, actividad) |
-| `aprobacion` | solicitud_id, regla_aprobacion_id, decision (`APROBADA`, `RECHAZADA`), decidido_por_usuario_id, decidido_en, comentario | UNIQUE(solicitud_id): un nivel (D11). Sin fila = pendiente |
+| `aprobacion` | solicitud_id, regla_aprobacion_id, decision (`APROBADA`, `RECHAZADA`), decidido_por_usuario_id (nulo = automática), decidido_en, comentario | UNIQUE(solicitud_id): un nivel (D11). Sin fila = pendiente; la aprobación automática también inserta fila (N4). El rechazo exige comentario |
 | `check_in` | reserva_id, usuario_id, metodo, registrado_en | PK reserva_id (1:1) |
-| `importacion` | archivo_nombre, periodo_id, usuario_id, total_filas, filas_ok, creado_en | — |
-| `importacion_error` | importacion_id, fila, columna, mensaje | PK(importacion_id, fila, columna). Antes era un JSON: ahora se puede consultar |
+| `importacion` | archivo_nombre, periodo_id, usuario_id, total_filas, creado_en | Las filas correctas se calculan en una vista (N1) |
+| `importacion_error` | id, importacion_id, fila, columna (nula = toda la fila), mensaje | UNIQUE NULLS NOT DISTINCT(importacion_id, fila, columna) (N5). Antes era un JSON: ahora se puede consultar |
 
 ## Estados de una reserva
 

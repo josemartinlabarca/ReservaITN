@@ -1,0 +1,19 @@
+{
+  "name": "@reservaitn/db",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Modelo físico de la base de datos ReservaITN (migraciones SQL, semillas y pruebas de restricciones)",
+  "scripts": {
+    "migrar": "node scripts/migrar.mjs",
+    "semillas": "node scripts/migrar.mjs --semillas",
+    "test:db": "vitest run"
+  },
+  "dependencies": {
+    "pg": "8.13.1"
+  },
+  "devDependencies": {
+    "@types/pg": "8.11.10",
+    "typescript": "5.6.3",
+    "vitest": "2.1.8"
+  }
+}

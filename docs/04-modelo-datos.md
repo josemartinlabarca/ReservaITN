@@ -1,6 +1,12 @@
 # 4. Modelo de datos (E2)
 
-Fuente de verdad: [`apps/api/prisma/schema.prisma`](../apps/api/prisma/schema.prisma).
+> **Modelo v1 (vigente):** 48 tablas normalizadas en 7 esquemas. Diseño en
+> [modelo-datos/decisiones.md](modelo-datos/decisiones.md), verificación formal (FNBC) en
+> [modelo-datos/normalizacion.md](modelo-datos/normalizacion.md) y SQL en
+> [`packages/db`](../packages/db/).
+>
+> Lo que sigue describe el **modelo v0**, que todavía usa la API (`apps/api/prisma/schema.prisma`)
+> hasta que se migre al v1 ([ADR 0004](adr/0004-sql-como-fuente-de-verdad.md)).
 
 ```mermaid
 erDiagram

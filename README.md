@@ -10,7 +10,7 @@ Gonzalo Pino (ingeniero de sistemas) y Braulio Campos (tester UA).
 | Web de administración + dashboard | `apps/web` (Next.js) |
 | App móvil Android/iOS | `apps/mobile` (Expo / React Native) |
 | API y reglas de negocio | `apps/api` (NestJS + Prisma) |
-| Base de datos | PostgreSQL 16 |
+| Base de datos | PostgreSQL 16, modelo v1 en `packages/db` (SQL) |
 | Validaciones y reglas compartidas | `packages/shared` (Zod + TypeScript) |
 
 ## Estructura
@@ -38,6 +38,7 @@ reservaitn/
 │       ├── mantencion/      1.4.10 app de aseo y mantención
 │       └── comun/           login y avisos
 ├── packages/
+│   ├── db/                  modelo de datos v1: migraciones SQL, semillas, pruebas de restricciones
 │   └── shared/              roles y permisos, esquemas Zod, reglas (choques, sugerencia, ocupación)
 ├── docs/                    metodología, roadmap, arquitectura, trazabilidad, ADR
 ├── infra/                   docker-compose (PostgreSQL + Mailpit)
@@ -92,7 +93,7 @@ Usuarios demo (contraseña `reservaitn`): `subdireccion@`, `datd@`, `academica@`
 1. [Metodología de trabajo](docs/01-metodologia.md)
 2. [Roadmap paso a paso por sprint](docs/02-roadmap.md)
 3. [Arquitectura](docs/03-arquitectura.md)
-4. [Modelo de datos](docs/04-modelo-datos.md)
+4. [Modelo de datos](docs/04-modelo-datos.md): [decisiones](docs/modelo-datos/decisiones.md) y [normalización](docs/modelo-datos/normalizacion.md)
 5. [Flujo Git y GitHub](docs/05-flujo-git.md)
 6. [Matriz de trazabilidad R1–R19](docs/06-trazabilidad.md)
 7. [Estrategia de pruebas](docs/07-pruebas.md)
