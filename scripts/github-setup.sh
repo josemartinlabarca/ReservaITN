@@ -20,6 +20,7 @@ label deberia d93f0b "MoSCoW: Debería"
 label podria fbca04 "MoSCoW: Podría"
 for p in api web mobile shared db ci docs; do label "area:$p" c5def5; done
 for r in $(seq 1 19); do label "R$r" ededed "Requisito R$r del Acta"; done
+for i in 1 2 3; do label "incremento:$i" 0052cc "Incremento $i del Plan de Alcance §7.4"; done
 for e in 1.4.1 1.4.2 1.4.3 1.4.4 1.4.5 1.4.6 1.4.7 1.4.8 1.4.9 1.4.10 1.5 1.6 1.7; do label "edt:$e" bfdadc; done
 
 echo "== Milestones"
@@ -43,25 +44,26 @@ epica() { # titulo | labels | milestone | cuerpo
   gh issue create --repo "$REPO" --title "$1" --label "$2" --milestone "$3" --body "$4" >/dev/null
   echo "issue: $1"
 }
-epica "[1.4.1] Usuarios, roles y acceso" "epica,edt:1.4.1,area:api,debe" "H4 Núcleo web" \
+epica "[1.4.1] Usuarios, roles y acceso" "epica,edt:1.4.1,incremento:1,area:api,debe" "H4 Núcleo web" \
   "Entregable **E4**. Cada rol accede solo a lo que le corresponde. Responsable: JL (50 h).
 - [x] Login JWT y guard de permisos
-- [ ] CRUD de usuarios (DATD / ADMIN_TI)
+- [x] Crear y listar usuarios (API)
+- [ ] Editar / desactivar usuarios; pantallas web
 - [ ] Cambio y recuperación de contraseña
 - [ ] Carga masiva de usuarios"
-epica "[1.4.2] Recursos: salas, laboratorios, sedes e inventario" "epica,edt:1.4.2,area:api,debe" "H4 Núcleo web" \
+epica "[1.4.2] Recursos: salas, laboratorios, sedes e inventario" "epica,edt:1.4.2,incremento:1,area:api,debe" "H4 Núcleo web" \
   "Entregable **E5**. Responsable: JL (45 h).
 - [x] Listar y crear salas
 - [ ] Editar / desactivar salas, sedes, carreras
 - [ ] Ítems de inventario por sala
 - [ ] Pantallas web de administración"
-epica "[1.4.3] Importación de planificación semestral" "epica,edt:1.4.3,area:api,R9,debe" "H4 Núcleo web" \
+epica "[1.4.3] Importación de planificación semestral" "epica,edt:1.4.3,incremento:1,area:api,R9,debe" "H4 Núcleo web" \
   "Entregable **E5**: ≥ 98 % de registros importados sin intervención. Responsable: JL (55 h).
-- [x] Esquema de validación por fila (\`filaPlanificacionSchema\`)
+- [x] Validación por fila, carga .xlsx con informe de errores y % importado
+- [x] Generación de reservas \`PLANIFICACION\` semanales del semestre (respeta el anti-choques)
 - [ ] Ajustar columnas al Excel real del ITN (**bloqueado: pedir archivo**)
-- [ ] Endpoint de carga (xlsx) con informe de errores por fila
-- [ ] Generación de reservas \`PLANIFICACION\` semanales del semestre"
-epica "[1.4.4] Reservas, aprobaciones, cancelación y anti-choques" "epica,edt:1.4.4,area:api,R1,R4,R5,R8,R11,debe" "H4 Núcleo web" \
+- [ ] Pantalla web de carga e historial de importaciones"
+epica "[1.4.4] Reservas, aprobaciones, cancelación y anti-choques" "epica,edt:1.4.4,incremento:1,area:api,R1,R4,R5,R8,R11,debe" "H4 Núcleo web" \
   "Entregable **E6**: 0 reservas dobles en ≥ 200 casos. Responsable: JL (100 h).
 - [x] Restricción EXCLUDE en PostgreSQL + prueba con 200 casos concurrentes
 - [x] Solicitar, aprobar, rechazar, cancelar, historial
@@ -69,36 +71,36 @@ epica "[1.4.4] Reservas, aprobaciones, cancelación y anti-choques" "epica,edt:1
 - [ ] Calendario de disponibilidad (web)
 - [ ] Formulario de solicitud (web)
 - [ ] Préstamo de laboratorios exclusivos: validar regla con directores de carrera"
-epica "[1.4.5] Sugerencia de sala y alternativas" "epica,edt:1.4.5,area:api,R10,debe" "H5 Web y móvil completas" \
+epica "[1.4.5] Sugerencia de sala y alternativas" "epica,edt:1.4.5,incremento:2,area:api,R10,debe" "H5 Web y móvil completas" \
   "Entregable **E7**: sala válida + hasta 3 alternativas (incluye las que se liberan en ≤ 30 min) en < 5 s. Responsable: JL (60 h).
 - [x] Regla \`sugerirSalas\` + endpoint
 - [ ] Interfaz web
 - [ ] Medir tiempo de respuesta con datos reales"
-epica "[1.4.6] Notificaciones y liberación de reservas no usadas" "epica,edt:1.4.6,area:api,R6,R18,debe" "H5 Web y móvil completas" \
+epica "[1.4.6] Notificaciones y liberación de reservas no usadas" "epica,edt:1.4.6,incremento:2,area:api,R6,R18,debe" "H5 Web y móvil completas" \
   "Entregable **E8**. Responsable: JL (40 h).
 - [x] Bandeja in-app
 - [ ] Envío por correo (SMTP)
 - [ ] Push (expo-notifications)
 - [ ] Check-in y job de liberación según la regla acordada"
-epica "[1.4.7] Dashboard, trazabilidad y reportes personalizados" "epica,edt:1.4.7,area:web,R7,R12,R13,debe" "H5 Web y móvil completas" \
+epica "[1.4.7] Dashboard, trazabilidad y reportes personalizados" "epica,edt:1.4.7,incremento:2,area:web,R7,R12,R13,debe" "H5 Web y móvil completas" \
   "Entregable **E9**. Responsable: BN (70 h).
 - [x] KPIs, ocupación por sala, detalle al elegir sala, rango desde–hasta
 - [ ] Filtros por sede y tipo; gráficos
 - [ ] Exportar reporte (CSV / PDF), por día, mes o año
 - [ ] Vista de historial (trazabilidad) por reserva"
-epica "[1.4.8] Proyección de uso por día y jornada" "epica,edt:1.4.8,area:api,R14,deberia" "H5 Web y móvil completas" \
+epica "[1.4.8] Proyección de uso por día y jornada" "epica,edt:1.4.8,incremento:2,area:api,R14,deberia" "H5 Web y móvil completas" \
   "Entregable **E10**. Responsable: JL (40 h).
-- [x] Distribución de horas por día y jornada
-- [ ] Ranking de días/jornadas de mayor y menor ocupación con historial
+- [x] Ranking de días/jornadas de mayor y menor ocupación (API + dashboard)
+- [ ] Comparación entre períodos
 - [ ] Informe de horas ociosas (beneficio B8)"
-epica "[1.4.9] App móvil de docentes y estudiantes" "epica,edt:1.4.9,area:mobile,R3,R16,debe" "H5 Web y móvil completas" \
+epica "[1.4.9] App móvil de docentes y estudiantes" "epica,edt:1.4.9,incremento:3,area:mobile,R3,R16,debe" "H5 Web y móvil completas" \
   "Entregable **E11**. Responsable: BN (100 h).
 - [x] Login, buscar sala con sugerencia, solicitar, avisos
 - [ ] Selectores nativos de fecha y hora
 - [ ] Mis reservas (ver, cancelar)
 - [ ] Notificaciones push
 - [ ] Build interna Android e iOS (EAS)"
-epica "[1.4.10] App móvil de mantención y aseo" "epica,edt:1.4.10,area:mobile,R15,R17,deberia" "H5 Web y móvil completas" \
+epica "[1.4.10] App móvil de mantención y aseo" "epica,edt:1.4.10,incremento:3,area:mobile,R15,R17,deberia" "H5 Web y móvil completas" \
   "Entregable **E12**. Responsable: BN (70 h).
 - [x] Reporte de daño por sala (notifica a operaciones)
 - [ ] Conteo de inventario

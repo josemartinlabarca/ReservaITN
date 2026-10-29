@@ -30,7 +30,7 @@ flowchart LR
    | Cliente (web/móvil) | Formato y reglas simples, con mensajes inmediatos | fin > inicio, horario 08:00–23:00 |
    | API | Lo mismo + permisos + estado | rol puede aprobar, transición PENDIENTE→APROBADA |
    | Base de datos | Invariantes que **nunca** se pueden romper | `EXCLUDE` anti-choques, bitácora inmutable |
-3. **Un módulo de la API por paquete de la EDT**, para que el avance se mida igual que en la EDT.
+3. **Un módulo de la API por paquete de la EDT 1.4** (`usuarios/` = 1.4.1 … `proyeccion/` = 1.4.8), para que el avance se mida igual que en la EDT. Ver la tabla en [02-roadmap.md](02-roadmap.md#estructura-del-desarrollo-edt-14--código).
 4. **API REST + JSON** con prefijo `/api`, autenticación por JWT en la cabecera `Authorization`.
 
 ## Endpoints actuales
@@ -38,16 +38,20 @@ flowchart LR
 | Método | Ruta | Permiso | Requisito |
 |---|---|---|---|
 | POST | `/api/auth/login` | público | R19 |
+| GET/POST | `/api/usuarios` | `usuario:gestionar` | E4 |
+| POST | `/api/importaciones` (multipart: `archivo`, `desde`, `hasta`) | `planificacion:importar` | R9 |
+| GET | `/api/importaciones` | `planificacion:importar` | R9 |
 | GET | `/api/sedes`, `/api/salas` | sesión | R3 |
 | POST | `/api/salas` | `recurso:gestionar` | — |
 | GET | `/api/reservas/ocupacion?desde&hasta&salaId` | sesión | R3 |
 | POST | `/api/reservas` | `reserva:solicitar` | R1, R2, R4, R11 |
-| POST | `/api/reservas/sugerencia` | `reserva:solicitar` | R10 |
+| POST | `/api/sugerencia` | `reserva:solicitar` | R10 |
 | GET | `/api/reservas/pendientes` | `reserva:aprobar` | R4 |
 | POST | `/api/reservas/:id/aprobar` · `/rechazar` | `reserva:aprobar` | R4, R6 |
 | POST | `/api/reservas/:id/cancelar` | propia o `reserva:cancelar_cualquiera` | R5 |
 | GET | `/api/reservas/:id/historial` | sesión | R7 |
-| GET | `/api/dashboard/ocupacion?desde&hasta&sedeId` | `dashboard:ver` | R12, R13, R14 |
+| GET | `/api/dashboard/ocupacion?desde&hasta&sedeId` | `dashboard:ver` | R12, R13 |
+| GET | `/api/proyeccion?desde&hasta&sedeId` | `dashboard:ver` | R14 |
 | GET | `/api/dashboard/indicadores?desde&hasta` | `dashboard:ver` | Beneficios B3, B6 |
 | GET/PATCH | `/api/notificaciones/mias`, `/:id/leida` | sesión | R6 |
 | POST | `/api/mantencion/danios`, `/inventario` | `danio:reportar`, `inventario:registrar` | R17 |

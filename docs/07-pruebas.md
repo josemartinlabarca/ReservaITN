@@ -12,7 +12,7 @@
 
 | Entregable | Criterio | Cómo se demuestra |
 |---|---|---|
-| E5 | ≥ 98 % del Excel importado sin intervención | Registro `importaciones.filas_ok / total_filas` |
+| E5 | ≥ 98 % del Excel importado sin intervención | `porcentajeOk` en la respuesta de `POST /importaciones` y en la tabla `importaciones`; prueba `importacion.db.test.ts` |
 | E6 | 0 reservas dobles en ≥ 200 casos | `pnpm --filter @reservaitn/api test:db` (200 aprobaciones concurrentes) |
 | E7 | Sugerencia en < 5 s | Medir tiempo de `POST /reservas/sugerencia` con datos reales |
 | E13 | ≥ 90 % de casos UAT aprobados, 0 críticos | Reporte de UAT + issues `bug` + `critico` cerrados |

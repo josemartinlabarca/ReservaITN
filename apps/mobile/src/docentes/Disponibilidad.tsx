@@ -7,7 +7,7 @@ import { Boton, Campo, Tarjeta, colores } from '../ui';
 interface Sugerencia { sala: { id: string; codigo: string; capacidad: number }; esperaMin: number }
 
 /**
- * Consulta de disponibilidad + solicitud (R3, R10, R11).
+ * App de docentes y estudiantes (WBS 1.4.9): consulta de disponibilidad + solicitud (R3, R10, R11).
  * El usuario indica fecha, horario y asistentes; el sistema sugiere sala y alternativas.
  * TODO sprint 3: reemplazar los campos de texto por selectores de fecha/hora nativos.
  */
@@ -26,7 +26,7 @@ export function Disponibilidad() {
   async function buscar() {
     setMsg(null);
     try {
-      const r = await api<{ sugerida: Sugerencia | null; alternativas: Sugerencia[] }>('/reservas/sugerencia', {
+      const r = await api<{ sugerida: Sugerencia | null; alternativas: Sugerencia[] }>('/sugerencia', {
         method: 'POST',
         body: JSON.stringify({ ...intervalo(), asistentes: Number(asistentes) }),
       });

@@ -13,12 +13,12 @@ Actualizar en cada PR que avance un requisito.
 | R6 | Notificaciones | Debe | E8 | `notificaciones.module.ts` (in-app) | — | 🟡 falta correo/push |
 | R7 | Trazabilidad | Debe | E9 | `EventoReserva` + trigger inmutable | manual | ✅ |
 | R8 | Laboratorios exclusivos y préstamo | Debe | E5/E6 | `Sala.carreraExclusivaId`, `puedeAprobar` | `reglas.test.ts` | 🟡 |
-| R9 | Importar planificación | Debe | E5 | `filaPlanificacionSchema`, modelo `Importacion` | `validaciones.test.ts` | 🟡 falta carga |
-| R10 | Sugerencia + alternativas ≤ 30 min | Debe | E7 | `shared/reglas/sugerencia.ts`, `POST /reservas/sugerencia` | `reglas.test.ts` | ✅ |
+| R9 | Importar planificación | Debe | E5 | `api/importacion`, `shared/reglas/planificacion.ts` | `importacion.db.test.ts`, `planificacion.test.ts` | 🟡 ajustar al Excel real |
+| R10 | Sugerencia + alternativas ≤ 30 min | Debe | E7 | `shared/reglas/sugerencia.ts`, `api/sugerencia` | `reglas.test.ts` | ✅ |
 | R11 | Estudiantes reservan con autorización | Debe | E6 | rol `ESTUDIANTE` → `PENDIENTE` | — | 🟡 |
 | R12 | Dashboard de ocupación con detalle | Debe | E9 | `dashboard.module.ts`, web `dashboard` | `dashboard.test.ts` | 🟡 |
 | R13 | Reportes desde–hasta | Debe | E9 | `rangoFechasSchema`, filtro web | — | 🟡 falta exportar |
-| R14 | Proyección de uso | Debería | E10 | `distribucionPorJornada` | `reglas.test.ts` | 🟡 |
+| R14 | Proyección de uso | Debería | E10 | `rankingJornadas`, `api/proyeccion`, web dashboard | `planificacion.test.ts` | 🟡 |
 | R15 | Mantención sin interferir clases | Debería | E12 | `OrigenReserva.MANTENCION` + EXCLUDE | — | 🟡 |
 | R16 | App móvil + web | Debe | E11 | `apps/mobile`, `apps/web` | — | 🟡 |
 | R17 | Inventario y daños desde el celular | Debería | E12 | `mantencion.module.ts`, móvil `ReporteDanio` | — | 🟡 |

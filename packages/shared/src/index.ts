@@ -5,3 +5,4 @@ export * from './reglas/choques';
 export * from './reglas/sugerencia';
 export * from './reglas/ocupacion';
 export * from './reglas/estados';
+export * from './reglas/planificacion';

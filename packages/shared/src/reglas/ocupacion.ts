@@ -42,3 +42,28 @@ export function distribucionPorJornada(
   }
   return out;
 }
+
+const JORNADAS: Jornada[] = ['MANANA', 'TARDE', 'VESPERTINA'];
+const NOMBRES_DIA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+export interface BloqueUso {
+  dia: string;
+  jornada: Jornada;
+  horas: number;
+}
+
+/**
+ * Proyección de uso (R14 / E10 / WBS 1.4.8): ordena los bloques día × jornada
+ * de mayor a menor ocupación a partir del historial. Incluye bloques sin uso (0 h),
+ * que son los candidatos a horas ociosas (beneficio B8).
+ */
+export function rankingJornadas(reservas: Intervalo[]): BloqueUso[] {
+  const dist = distribucionPorJornada(reservas);
+  const bloques: BloqueUso[] = [];
+  for (let d = 1; d <= 6; d++) {
+    for (const j of JORNADAS) {
+      bloques.push({ dia: NOMBRES_DIA[d], jornada: j, horas: Math.round((dist[d]?.[j] ?? 0) * 10) / 10 });
+    }
+  }
+  return bloques.sort((a, b) => b.horas - a.horas);
+}

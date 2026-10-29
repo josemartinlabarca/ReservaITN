@@ -8,28 +8,34 @@ interface Ocupacion {
   indiceGlobal: number;
   totalReservas: number;
   porSala: FilaSala[];
-  porDiaYJornada: Record<string, Record<'MANANA' | 'TARDE' | 'VESPERTINA', number>>;
 }
+interface Bloque { dia: string; jornada: 'MANANA' | 'TARDE' | 'VESPERTINA'; horas: number }
+interface Proyeccion { mayorUso: Bloque[]; menorUso: Bloque[] }
 interface Indicadores { pendientes: number; B6_tiempoPromedioAprobacionHoras: number | null; B3_reservasNoUsadas: number }
 interface OcupSala { id: string; inicio: string; fin: string; motivo: string; origen: string }
 
-const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const JORNADA = { MANANA: 'mañana', TARDE: 'tarde', VESPERTINA: 'vespertina' } as const;
 const pct = (n: number) => `${(n * 100).toFixed(1)} %`;
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
-/** Dashboard de ocupación (R12), reporte desde–hasta (R13) y uso por jornada (R14). */
+/** Dashboard de ocupación (R12, WBS 1.4.7), reporte desde–hasta (R13) y proyección de uso (R14, WBS 1.4.8). */
 export default function Dashboard() {
   const hoy = new Date();
   const [rango, setRango] = useState({ desde: iso(new Date(hoy.getTime() - 30 * 86_400_000)), hasta: iso(hoy) });
   const [datos, setDatos] = useState<Ocupacion | null>(null);
   const [ind, setInd] = useState<Indicadores | null>(null);
+  const [proy, setProy] = useState<Proyeccion | null>(null);
   const [detalle, setDetalle] = useState<{ sala: FilaSala; reservas: OcupSala[] } | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const q = `desde=${rango.desde}&hasta=${rango.hasta}`;
-    Promise.all([api<Ocupacion>(`/dashboard/ocupacion?${q}`), api<Indicadores>(`/dashboard/indicadores?${q}`)])
-      .then(([o, i]) => { setDatos(o); setInd(i); setError(''); })
+    Promise.all([
+      api<Ocupacion>(`/dashboard/ocupacion?${q}`),
+      api<Indicadores>(`/dashboard/indicadores?${q}`),
+      api<Proyeccion>(`/proyeccion?${q}`),
+    ])
+      .then(([o, i, p]) => { setDatos(o); setInd(i); setProy(p); setError(''); })
       .catch((e) => setError(e.message));
   }, [rango]);
 
@@ -94,15 +100,20 @@ export default function Dashboard() {
               </section>
             )}
 
-            <section className="card">
-              <h2>Horas usadas por día y jornada</h2>
-              <table>
-                <thead><tr><th>Día</th><th>Mañana</th><th>Tarde</th><th>Vespertina</th></tr></thead>
-                <tbody>{Object.entries(datos.porDiaYJornada).map(([dia, j]) => (
-                  <tr key={dia}><td>{DIAS[Number(dia)]}</td><td>{j.MANANA.toFixed(1)}</td><td>{j.TARDE.toFixed(1)}</td><td>{j.VESPERTINA.toFixed(1)}</td></tr>
-                ))}</tbody>
-              </table>
-            </section>
+            {proy && (
+              <section className="grid">
+                {([['Jornadas de mayor uso', proy.mayorUso], ['Jornadas de menor uso', proy.menorUso]] as const).map(([titulo, bloques]) => (
+                  <div className="card" key={titulo}>
+                    <h2>{titulo}</h2>
+                    <table>
+                      <tbody>{bloques.map((b) => (
+                        <tr key={b.dia + b.jornada}><td>{b.dia} {JORNADA[b.jornada]}</td><td>{b.horas.toFixed(1)} h</td></tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                ))}
+              </section>
+            )}
           </>
         )}
       </main>

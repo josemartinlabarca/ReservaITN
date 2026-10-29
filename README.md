@@ -18,20 +18,25 @@ Gonzalo Pino (ingeniero de sistemas) y Braulio Campos (tester UA).
 ```
 reservaitn/
 ├── apps/
-│   ├── api/                 API REST (NestJS). Un módulo por paquete de la EDT
+│   ├── api/                 API REST (NestJS). Un módulo por paquete de la EDT 1.4
 │   │   ├── prisma/          schema.prisma, migraciones SQL, seed
 │   │   ├── src/
-│   │   │   ├── auth/            1.4.1  login JWT + guard de permisos
+│   │   │   ├── usuarios/        1.4.1  login, usuarios, roles (guard de permisos)
 │   │   │   ├── recursos/        1.4.2  sedes, salas, laboratorios
+│   │   │   ├── importacion/     1.4.3  carga del Excel de planificación
 │   │   │   ├── reservas/        1.4.4  reservas, aprobación, cancelación, anti-choques
-│   │   │   │                    1.4.5  sugerencia de sala
-│   │   │   ├── notificaciones/  1.4.6  bandeja de avisos
+│   │   │   ├── sugerencia/      1.4.5  sala sugerida + alternativas
+│   │   │   ├── notificaciones/  1.4.6  avisos (liberación: pendiente)
 │   │   │   ├── dashboard/       1.4.7  ocupación, reportes desde–hasta, indicadores
+│   │   │   ├── proyeccion/      1.4.8  días y jornadas de mayor/menor uso
 │   │   │   ├── mantencion/      1.4.10 daños e inventario
 │   │   │   └── comun/           Prisma, validación Zod, guard, manejo de errores
 │   │   └── test/            pruebas de integración contra PostgreSQL
-│   ├── web/                 Next.js: login, dashboard, aprobaciones
-│   └── mobile/              Expo: reservar, avisos, reporte de daños (según rol)
+│   ├── web/                 Next.js: login, dashboard (1.4.7–1.4.8), aprobaciones (1.4.4)
+│   └── mobile/src/
+│       ├── docentes/        1.4.9  app de docentes y estudiantes
+│       ├── mantencion/      1.4.10 app de aseo y mantención
+│       └── comun/           login y avisos
 ├── packages/
 │   └── shared/              roles y permisos, esquemas Zod, reglas (choques, sugerencia, ocupación)
 ├── docs/                    metodología, roadmap, arquitectura, trazabilidad, ADR

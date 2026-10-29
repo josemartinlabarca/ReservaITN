@@ -8,7 +8,7 @@ interface Sala { id: string; codigo: string; sede: { nombre: string } }
 const SEVERIDADES = ['BAJA', 'MEDIA', 'ALTA'] as const;
 
 /**
- * App de aseo y mantención (R17 / E12): reporte de daños por sala.
+ * App de aseo y mantención (WBS 1.4.10 / R17 / E12): reporte de daños por sala.
  * Interfaz deliberadamente simple (riesgo de brecha digital, ver Registro de Interesados I5).
  * TODO sprint 4: conteo de inventario y foto con expo-image-picker.
  */

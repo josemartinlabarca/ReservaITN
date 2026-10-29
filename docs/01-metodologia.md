@@ -10,6 +10,17 @@
 Con solo 4 semanas de desarrollo (semanas 5–8) los sprints son de **1 semana**: así hay 4 puntos de
 control antes de H5 y cualquier desvío se detecta a tiempo.
 
+Los sprints se agrupan en los **tres incrementos** del Plan de Alcance §7.4, cada uno cerrado con una
+demo a la patrocinadora y al subdirector:
+
+| Incremento | Paquetes EDT | Horas | Hito |
+|---|---|---|---|
+| 1. Núcleo web | 1.4.1, 1.4.2, 1.4.3, 1.4.4 | 250 | H4 (13/11) |
+| 2. Funciones de análisis | 1.4.5, 1.4.6, 1.4.7, 1.4.8 | 210 | H5 (27/11) |
+| 3. Aplicaciones móviles | 1.4.9, 1.4.10 | 170 | H5 (27/11) |
+
+Los incrementos 2 y 3 corren en paralelo. Ver el análisis de capacidad en [02-roadmap.md](02-roadmap.md).
+
 ## De la EDT al backlog
 
 ```
@@ -19,7 +30,7 @@ EDT (1.4.4 Reservas…)  ──►  Épica (issue con label "epica")
                               └── Tarea técnica: "Restricción EXCLUDE en PostgreSQL"     (issue)
 ```
 
-- Cada **paquete de trabajo** de la EDT es una **épica** (label `edt:1.4.4`).
+- Cada **paquete de trabajo** de la EDT es una **épica** (labels `edt:1.4.4` e `incremento:1`).
 - Cada épica se divide en **historias de usuario** de máximo 2 días de trabajo.
 - Cada historia lleva el **requisito** que cumple (label `R1`…`R19`), su **prioridad MoSCoW**
   (`debe`, `deberia`, `podria`) y el **hito** (milestone).

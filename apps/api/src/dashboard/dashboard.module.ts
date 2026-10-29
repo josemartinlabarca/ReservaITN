@@ -1,7 +1,6 @@
 import { Controller, Get, Module, Query } from '@nestjs/common';
 import {
   HORARIO,
-  distribucionPorJornada,
   horasOcupadas,
   indiceOcupacion,
   rangoFechasSchema,
@@ -19,7 +18,7 @@ export function horasDisponiblesPorSala(desde: Date, hasta: Date): number {
   return dias * horasDia;
 }
 
-/** Dashboard, reportes “desde–hasta” y proyección de uso (E9, E10 / WBS 1.4.7, 1.4.8). */
+/** Dashboard, trazabilidad y reportes “desde–hasta” (E9 / WBS 1.4.7). */
 @Controller('dashboard')
 class DashboardController {
   constructor(private readonly prisma: PrismaService) {}
@@ -64,7 +63,6 @@ class DashboardController {
       indiceGlobal: indiceOcupacion(totalHoras, dispSala * salas.length),
       totalReservas: reservas.length,
       porSala,
-      porDiaYJornada: distribucionPorJornada(reservas),
     };
   }
 

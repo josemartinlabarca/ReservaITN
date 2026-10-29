@@ -4,10 +4,10 @@ import { StatusBar } from 'expo-status-bar';
 import { tienePermiso } from '@reservaitn/shared';
 import { cargarSesion, guardarSesion, type Sesion } from './api';
 import { Boton, colores } from './ui';
-import { Login } from './pantallas/Login';
-import { Disponibilidad } from './pantallas/Disponibilidad';
-import { Notificaciones } from './pantallas/Notificaciones';
-import { ReporteDanio } from './pantallas/ReporteDanio';
+import { Login } from './comun/Login';
+import { Disponibilidad } from './docentes/Disponibilidad';
+import { Notificaciones } from './comun/Notificaciones';
+import { ReporteDanio } from './mantencion/ReporteDanio';
 
 type Pestana = 'reservar' | 'avisos' | 'danio';
 

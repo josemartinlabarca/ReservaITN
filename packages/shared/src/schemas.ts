@@ -102,10 +102,17 @@ export const filaPlanificacionSchema = z.object({
   codigoSala: z.string().trim().min(1),
   asignatura: z.string().trim().min(1),
   docenteRut: rutSchema.optional(),
-  diaSemana: z.coerce.number().int().min(1).max(6), // 1 = lunes … 6 = sábado
+  diaSemana: z.coerce
+    .number({ invalid_type_error: 'Debe ser un número del 1 (lunes) al 6 (sábado)' })
+    .int()
+    .min(1, 'Debe ser un número del 1 (lunes) al 6 (sábado)')
+    .max(6, 'Debe ser un número del 1 (lunes) al 6 (sábado)'),
   horaInicio: z.string().regex(/^\d{2}:\d{2}$/, 'Formato HH:MM'),
   horaFin: z.string().regex(/^\d{2}:\d{2}$/, 'Formato HH:MM'),
-  inscritos: z.coerce.number().int().nonnegative(),
+  inscritos: z.coerce
+    .number({ invalid_type_error: 'Debe ser un número' })
+    .int('Debe ser un número entero')
+    .nonnegative('No puede ser negativo'),
 });
 export type FilaPlanificacion = z.infer<typeof filaPlanificacionSchema>;
 

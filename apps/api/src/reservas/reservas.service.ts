@@ -10,7 +10,6 @@ import {
   buscarChoques,
   puedeAprobar,
   siguienteEstado,
-  sugerirSalas,
   tienePermiso,
   type AccionReserva,
   type ReservaCreate,
@@ -149,17 +148,6 @@ export class ReservasService {
       include: { actor: { select: { nombre: true, rol: true } } },
       orderBy: { creadoEn: 'asc' },
     });
-  }
-
-  async sugerir(params: { inicio: Date; fin: Date; asistentes: number; sedeId?: string; equipamiento?: string[] }, u: UsuarioSesion) {
-    const salas = await this.prisma.sala.findMany({ where: { activa: true } });
-    const ventanaFin = new Date(params.fin.getTime() + 30 * 60_000);
-    const ocup = await this.ocupaciones(params.inicio, ventanaFin);
-    return sugerirSalas(
-      { ...params, equipamientoRequerido: params.equipamiento, carreraSolicitanteId: u.carreraId },
-      salas,
-      ocup,
-    );
   }
 
   private autorizar(

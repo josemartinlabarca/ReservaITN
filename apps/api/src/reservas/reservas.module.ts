@@ -10,16 +10,9 @@ const disponibilidadSchema = z.object({
   hasta: z.coerce.date(),
   salaId: z.string().uuid().optional(),
 });
-const sugerenciaSchema = z.object({
-  inicio: z.coerce.date(),
-  fin: z.coerce.date(),
-  asistentes: z.number().int().positive(),
-  sedeId: z.string().uuid().optional(),
-  equipamiento: z.array(z.string()).optional(),
-});
 type Decision = z.infer<typeof decisionReservaSchema>;
 
-/** Reservas, aprobaciones, cancelación y anti-choques (E6 / WBS 1.4.4) + sugerencia (E7 / 1.4.5). */
+/** Reservas, aprobaciones, cancelación y anti-choques (E6 / WBS 1.4.4). */
 @Controller('reservas')
 class ReservasController {
   constructor(private readonly svc: ReservasService) {}
@@ -39,12 +32,6 @@ class ReservasController {
   @Post()
   solicitar(@Body(new ZodPipe(reservaCreateSchema())) dto: ReservaCreate, @UsuarioActual() u: UsuarioSesion) {
     return this.svc.solicitar(dto, u);
-  }
-
-  @RequierePermiso('reserva:solicitar')
-  @Post('sugerencia')
-  sugerir(@Body(new ZodPipe(sugerenciaSchema)) dto: z.infer<typeof sugerenciaSchema>, @UsuarioActual() u: UsuarioSesion) {
-    return this.svc.sugerir(dto, u);
   }
 
   @RequierePermiso('reserva:aprobar')
