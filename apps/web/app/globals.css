@@ -65,3 +65,14 @@ textarea { padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px;
 .evento-PLANIFICACION { background: #dce6f5; border-color: #9db3dd; color: #1f3864; }
 .leyenda { display: flex; gap: 0.4rem; align-items: center; font-size: 0.8rem; color: var(--muted); }
 .muestra { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid; margin-left: 0.6rem; }
+
+/* Administración */
+.dialogo-ancho { width: min(820px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; }
+.tabla-scroll { overflow-x: auto; }
+label.check { display: flex; gap: 6px; align-items: center; color: var(--text); }
+fieldset.grupo { border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; margin: 0; }
+fieldset.grupo legend { color: var(--muted); font-size: 0.875rem; padding: 0 4px; }
+/* Los campos ocupan su columna y nunca la desbordan (los inputs tienen un ancho mínimo propio) */
+.campos > label, .campos > div { min-width: 0; }
+.campos input, .campos select, .campos textarea, label > textarea { width: 100%; min-width: 0; box-sizing: border-box; }
+.campos input[type=checkbox] { width: auto; }

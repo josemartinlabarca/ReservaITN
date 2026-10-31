@@ -40,8 +40,11 @@ flowchart LR
 | POST | `/api/auth/login` | público | R19; devuelve roles con ámbito y permisos calculados por la base |
 | GET | `/api/auth/yo` | sesión | — |
 | GET/POST | `/api/usuarios` | `usuario:gestionar` | E4: persona + cuenta + roles en una transacción |
+| PATCH | `/api/usuarios/:id` (estado, roles, contraseña) | `usuario:gestionar` | E4: no permite bloquearse ni quitarse el permiso a sí mismo |
 | GET | `/api/sedes`, `/api/espacios?sedeId&tipo`, `/api/catalogos` | sesión | R3 |
 | POST | `/api/espacios` | `recurso:gestionar` | E5 |
+| PATCH | `/api/espacios/:id` (datos, equipamiento, activo, reservable) | `recurso:gestionar` | E5: no desactiva un espacio con reservas futuras |
+| GET | `/api/espacios?todos=true`, `/api/carreras` | `recurso:gestionar` / sesión | E5 |
 | POST | `/api/importaciones` (multipart: `archivo`, `periodo`) | `planificacion:importar` | R9, E5 |
 | GET | `/api/importaciones` | `planificacion:importar` | R9 |
 | POST | `/api/reservas` (única o semanal con `repetirHasta`) | `reserva:solicitar` | R1, R2, R4, R11, D11–D13 |

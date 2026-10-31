@@ -75,6 +75,30 @@ export const espacioCreateSchema = z.object({
 });
 export type EspacioCreate = z.infer<typeof espacioCreateSchema>;
 
+/** Edición de un espacio: todos los campos opcionales; `items` reemplaza el equipamiento completo. */
+export const espacioUpdateSchema = espacioCreateSchema
+  .omit({ edificioId: true })
+  .partial()
+  .extend({ activo: z.boolean().optional(), reservable: z.boolean().optional() });
+export type EspacioUpdate = z.infer<typeof espacioUpdateSchema>;
+
+/** Edición de un usuario: estado, roles (reemplaza todos) y contraseña nueva. */
+export const usuarioUpdateSchema = z.object({
+  estado: z.enum(['ACTIVO', 'BLOQUEADO']).optional(),
+  roles: z
+    .array(
+      z.object({
+        rol: z.enum(ROLES),
+        sedeId: z.string().uuid().nullable().optional(),
+        carreraId: z.string().uuid().nullable().optional(),
+      }),
+    )
+    .min(1, 'Asigne al menos un rol')
+    .optional(),
+  password: z.string().min(8, 'Mínimo 8 caracteres').optional(),
+});
+export type UsuarioUpdate = z.infer<typeof usuarioUpdateSchema>;
+
 /** Validación de una solicitud de reserva (R1, R4, R19). `ahora` es inyectable para tests. */
 export function reservaCreateSchema(ahora: () => Date = () => new Date()) {
   return z

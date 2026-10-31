@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Module, Post, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Module, NotFoundException, Param, ParseUUIDPipe, Patch, Post, UnauthorizedException } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { usuarioCreateSchema, type Rol, type RolAsignado, type UsuarioCreate } from '@reservaitn/shared';
+import { usuarioCreateSchema, usuarioUpdateSchema, type Rol, type RolAsignado, type UsuarioCreate, type UsuarioUpdate } from '@reservaitn/shared';
 import { PrismaService } from '../comun/prisma.service';
 import { AuthGuard, Publico, RequierePermiso, UsuarioActual, type UsuarioSesion } from '../comun/auth.guard';
 import { ZodPipe } from '../comun/zod.pipe';
@@ -93,7 +93,43 @@ class UsuariosController {
       return { id: usuario.id, personaId: persona.id };
     });
   }
+
+  /**
+   * Edita estado, roles (reemplaza todos) o contraseña. Un administrador no puede bloquearse a sí
+   * mismo ni quitarse el permiso de administrar usuarios: el sistema nunca queda sin administrador.
+   */
+  @RequierePermiso('usuario:gestionar')
+  @Patch('usuarios/:id')
+  async editar(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodPipe(usuarioUpdateSchema)) dto: UsuarioUpdate, @UsuarioActual() actor: UsuarioSesion) {
+    const usuario = await this.prisma.usuario.findUnique({ where: { id } });
+    if (!usuario) throw new NotFoundException('Usuario no encontrado');
+    if (id === actor.id) {
+      if (dto.estado === 'BLOQUEADO') throw new BadRequestException('No puede bloquear su propia cuenta');
+      if (dto.roles) {
+        const permisos = await this.prisma.rol_permiso.findMany({
+          where: { rol: { codigo: { in: dto.roles.map((r) => r.rol) } }, permiso: { codigo: 'usuario:gestionar' } },
+        });
+        if (!permisos.length) throw new BadRequestException('No puede quitarse el permiso de administrar usuarios');
+      }
+    }
+    const hash = dto.password ? await bcrypt.hash(dto.password, 10) : undefined;
+    await this.prisma.conActor(actor.id, async (tx) => {
+      await tx.usuario.update({ where: { id }, data: { estado: dto.estado, password_hash: hash } });
+      if (dto.roles) {
+        await tx.usuario_rol.deleteMany({ where: { usuario_id: id } });
+        for (const r of dto.roles) {
+          const rol = await tx.rol.findUniqueOrThrow({ where: { codigo: r.rol } });
+          await tx.usuario_rol.create({
+            data: { usuario_id: id, rol_id: rol.id, sede_id: r.sedeId ?? null, carrera_id: r.carreraId ?? null },
+          });
+        }
+      }
+    });
+    return (await this.listar()).find((x) => x.id === id);
+  }
 }
+
+export { UsuariosController };
 
 @Module({
   controllers: [UsuariosController],
