@@ -6,7 +6,7 @@ Al terminar tendrás corriendo:
 
 | Servicio | Dirección | Para qué |
 |---|---|---|
-| Base de datos PostgreSQL 16 | `localhost:5432` | Datos (modelo v1, 48 tablas) |
+| Base de datos PostgreSQL 16 | `localhost:5434` | Datos (modelo v1, 48 tablas) |
 | API (NestJS) | http://localhost:3001/api | Reglas de negocio |
 | Web (Next.js) | http://localhost:3000 | Administración, dashboard, aprobaciones |
 | App móvil (Expo) | En tu celular, con Expo Go | Docentes, estudiantes, aseo |
@@ -92,28 +92,18 @@ docker compose -f infra/docker-compose.yml ps
 Esto crea un PostgreSQL 16 con usuario, contraseña y base `reservaitn`, y Mailpit para los correos.
 En Docker Desktop aparece como el grupo **`reservaitn`**.
 
-> **El puerto 5432 debe estar libre.** Si en Docker Desktop tienes otro proyecto corriendo con su propio
-> PostgreSQL, o un PostgreSQL instalado en Windows, ese ocupa el puerto y `pnpm db:seed` fallará con
-> *password authentication failed*. Detén el otro proyecto (botón ■ en Docker Desktop) antes de
-> `pnpm db:up`. Para ver quién usa cada puerto: `docker ps --format "table {{.Names}}\t{{.Ports}}"`.
-
-**Si prefieres no detener el otro proyecto**, usa otro puerto para ReservaITN, por ejemplo el 5434.
-Antes, comprueba que esté libre: `netstat -ano | findstr :5434` (Windows) o `lsof -i :5434` (macOS / Linux)
-no deben mostrar nada. El 5433 suele estar ocupado por otros proyectos.
-
-1. Copia `infra/.env.example` como `infra/.env` (contiene `DB_PUERTO=5434`). En Windows:
-
-   ```bash
-   copy infra\.env.example infra\.env
-   ```
-
-2. En `apps/api/.env` (se crea en el paso 5), cambia `5432` por `5434` en `DATABASE_URL`:
-
-   ```
-   DATABASE_URL="postgresql://reservaitn:reservaitn@localhost:5434/reservaitn"
-   ```
-
-3. Ejecuta `pnpm db:up` (y, si ya lo habías intentado, antes `pnpm db:down`).
+> **Puerto 5434.** La base de ReservaITN se publica en el puerto **5434** y no en el 5432 habitual.
+> En Windows es común tener un PostgreSQL instalado ocupando el 5432, y ese gana la conexión a
+> `localhost` aunque Docker también publique el 5432. Con un puerto propio no chocan.
+>
+> Si el 5434 también está ocupado (`netstat -ano | findstr :5434` muestra algo), elige otro, por
+> ejemplo el 5435, y úsalo al levantar la base:
+>
+> - CMD: `set DB_PUERTO=5435&& pnpm db:up`
+> - PowerShell: `$env:DB_PUERTO=5435; pnpm db:up`
+> - macOS / Linux: `DB_PUERTO=5435 pnpm db:up`
+>
+> y pon el mismo puerto en `DATABASE_URL` de `apps/api/.env` (paso 5).
 
 ### Opción B: PostgreSQL instalado en tu computador
 
@@ -128,6 +118,9 @@ psql -U postgres -c "CREATE DATABASE reservaitn OWNER reservaitn;"
 ```
 
 No hace falta que el usuario sea superusuario: basta con que sea dueño de la base.
+
+**Importante:** tu PostgreSQL usa el puerto **5432**, así que en el paso 5 cambia `5434` por `5432`
+en `DATABASE_URL`.
 
 ---
 
@@ -157,7 +150,7 @@ Contenido de `apps/api/.env` (sirve tal cual para desarrollo):
 
 | Variable | Valor por defecto | Qué es |
 |---|---|---|
-| `DATABASE_URL` | `postgresql://reservaitn:reservaitn@localhost:5432/reservaitn` | Conexión a la base del paso 4 |
+| `DATABASE_URL` | `postgresql://reservaitn:reservaitn@localhost:5434/reservaitn` | Conexión a la base del paso 4 (puerto 5434 con Docker; 5432 con la opción B) |
 | `JWT_SECRET` | `cambiar-en-produccion` | Firma de las sesiones. En producción, un valor largo y aleatorio |
 | `PORT` | `3001` | Puerto de la API |
 | `CORS_ORIGIN` | `http://localhost:3000` | Desde dónde puede llamarla la web |
@@ -363,8 +356,8 @@ pnpm db:seed
 | Síntoma | Causa | Solución |
 |---|---|---|
 | `pnpm: command not found` | Corepack no activado | `corepack enable` y abrir una terminal nueva |
-| `ECONNREFUSED 127.0.0.1:5432` o `P1001` | La base no está corriendo | Abrir Docker Desktop y `pnpm db:up` |
-| `password authentication failed for user "reservaitn"` | Otro PostgreSQL responde en `localhost:5432`. En Windows, un PostgreSQL instalado escucha en `127.0.0.1:5432` y **gana sobre Docker** aunque el contenedor esté corriendo (`netstat -ano \| findstr :5432` lo muestra con su PID) | Usar otro puerto para ReservaITN (paso 4, `DB_PUERTO=5434`), o detener ese PostgreSQL en *Servicios* de Windows |
+| *No hay ningún PostgreSQL escuchando* (`ECONNREFUSED`, `P1001`) | La base no está corriendo, o corre en otro puerto que el de `DATABASE_URL` | `pnpm db:up` y comparar el puerto de `docker ps --format "table {{.Names}}\t{{.Ports}}"` con el de `apps/api/.env` |
+| `password authentication failed for user "reservaitn"` | Respondió otro PostgreSQL (por ejemplo, uno instalado en Windows en el 5432) en vez del de ReservaITN | Verificar que `DATABASE_URL` use el puerto **5434** (el de Docker) y que `docker ps` muestre `reservaitn-db-1` con `5434` |
 | `Port 3000 is already in use` (o 3001) | Otra app usa el puerto | Cerrarla, o en macOS / Linux: `npx kill-port 3000 3001` |
 | `La migración V00X cambió después de aplicarse` | Alguien editó una migración ya aplicada | No se editan migraciones: revertir el cambio y crear una nueva. En desarrollo, reiniciar la base |
 | La web dice *Credenciales inválidas* con los usuarios demo | No se cargaron los datos de demostración | `pnpm db:seed` |

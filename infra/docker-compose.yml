@@ -8,8 +8,10 @@ services:
       POSTGRES_USER: reservaitn
       POSTGRES_PASSWORD: reservaitn
       POSTGRES_DB: reservaitn
-    # Puerto configurable en infra/.env (DB_PUERTO=5433) si el 5432 lo usa otro proyecto
-    ports: ["${DB_PUERTO:-5432}:5432"]
+    # Puerto 5434 en el computador (no el 5432 habitual): en Windows es común tener un PostgreSQL
+    # instalado ocupando el 5432, y además gana la conexión a localhost aunque Docker también lo publique.
+    # Si el 5434 también está ocupado, definir DB_PUERTO (ver docs/00-guia-de-inicio.md, paso 4).
+    ports: ["${DB_PUERTO:-5434}:5432"]
     volumes: [db_data:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U reservaitn"]

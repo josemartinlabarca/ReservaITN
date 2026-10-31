@@ -20,11 +20,11 @@ scripts/       migrar.mjs: aplica migraciones pendientes y verifica su checksum
 Todos requieren `DATABASE_URL`. Para crear una base local:
 
 ```bash
-createdb -h localhost -U reservaitn reservaitn_modelo
+createdb -h localhost -p 5434 -U reservaitn reservaitn_modelo
 ```
 
 ```bash
-DATABASE_URL=postgresql://reservaitn:reservaitn@localhost:5432/reservaitn_modelo pnpm --filter @reservaitn/db semillas
+DATABASE_URL=postgresql://reservaitn:reservaitn@localhost:5434/reservaitn_modelo pnpm --filter @reservaitn/db semillas
 ```
 
 ## Reglas para cambiar el esquema
