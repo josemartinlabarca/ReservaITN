@@ -1,12 +1,12 @@
 import * as SecureStore from 'expo-secure-store';
-import type { Rol } from '@reservaitn/shared';
+import type { RolAsignado } from '@reservaitn/shared';
 
 /** En un dispositivo físico, cambiar por la IP del PC (ej. http://192.168.1.10:3001/api). */
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 export interface Sesion {
   token: string;
-  usuario: { id: string; nombre: string; rol: Rol; carreraId: string | null };
+  usuario: { id: string; nombre: string; roles: RolAsignado[]; permisos: string[] };
 }
 
 let actual: Sesion | null = null;
@@ -16,6 +16,8 @@ export async function cargarSesion(): Promise<Sesion | null> {
   actual = raw ? (JSON.parse(raw) as Sesion) : null;
   return actual;
 }
+
+export const sesionActual = () => actual;
 
 export async function guardarSesion(s: Sesion | null) {
   actual = s;

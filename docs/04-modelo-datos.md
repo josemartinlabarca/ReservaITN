@@ -5,8 +5,10 @@
 > [modelo-datos/normalizacion.md](modelo-datos/normalizacion.md) y SQL en
 > [`packages/db`](../packages/db/).
 >
-> Lo que sigue describe el **modelo v0**, que todavía usa la API (`apps/api/prisma/schema.prisma`)
-> hasta que se migre al v1 ([ADR 0004](adr/0004-sql-como-fuente-de-verdad.md)).
+> La API usa el modelo v1. `apps/api/prisma/schema.prisma` se **genera** desde la base con
+> `prisma:pull` y no se edita a mano ([ADR 0004](adr/0004-sql-como-fuente-de-verdad.md)).
+>
+> Lo que sigue es el **modelo v0** original, que se conserva como registro histórico.
 
 ```mermaid
 erDiagram

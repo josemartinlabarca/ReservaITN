@@ -15,9 +15,9 @@ class ProyeccionController {
     const reservas = await this.prisma.reserva.findMany({
       where: {
         estado: 'APROBADA',
-        origen: { not: 'MANTENCION' },
+        solicitud: { origen: { not: 'MANTENCION' } },
         inicio: { gte: q.desde, lt: q.hasta },
-        ...(q.sedeId ? { sala: { sedeId: q.sedeId } } : {}),
+        ...(q.sedeId ? { espacio: { edificio: { sede_id: q.sedeId } } } : {}),
       },
       select: { inicio: true, fin: true },
     });

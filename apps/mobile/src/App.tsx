@@ -22,7 +22,7 @@ export default function App() {
   useEffect(() => {
     cargarSesion().then((s) => {
       setSesion(s);
-      if (s && !tienePermiso(s.usuario.rol, 'reserva:solicitar')) setPestana('danio');
+      if (s && !tienePermiso(s.usuario.permisos, 'reserva:solicitar')) setPestana('danio');
     });
   }, []);
 
@@ -33,15 +33,15 @@ export default function App() {
         onIngreso={async (s) => {
           await guardarSesion(s);
           setSesion(s);
-          setPestana(tienePermiso(s.usuario.rol, 'reserva:solicitar') ? 'reservar' : 'danio');
+          setPestana(tienePermiso(s.usuario.permisos, 'reserva:solicitar') ? 'reservar' : 'danio');
         }}
       />
     );
 
-  const rol = sesion.usuario.rol;
+  const { permisos } = sesion.usuario;
   const pestanas: [Pestana, string][] = [
-    ...(tienePermiso(rol, 'reserva:solicitar') ? [['reservar', 'Reservar'] as [Pestana, string]] : []),
-    ...(tienePermiso(rol, 'danio:reportar') ? [['danio', 'Reportar daño'] as [Pestana, string]] : []),
+    ...(tienePermiso(permisos, 'reserva:solicitar') ? [['reservar', 'Reservar'] as [Pestana, string]] : []),
+    ...(tienePermiso(permisos, 'danio:reportar') ? [['danio', 'Reportar daño'] as [Pestana, string]] : []),
     ['avisos', 'Avisos'],
   ];
 

@@ -9,13 +9,14 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
-import { tienePermiso, type Permiso, type Rol } from '@reservaitn/shared';
+import { tienePermiso, type Permiso, type RolAsignado } from '@reservaitn/shared';
 
+/** Contenido del token. Los permisos se calculan en la base al iniciar sesión (seguridad.permisos_de). */
 export interface UsuarioSesion {
   id: string;
-  rol: Rol;
-  carreraId: string | null;
   nombre: string;
+  roles: RolAsignado[];
+  permisos: string[];
 }
 
 const PUBLICO = 'publico';
@@ -49,7 +50,7 @@ export class AuthGuard implements CanActivate {
     }
 
     const permiso = this.reflector.getAllAndOverride<Permiso>(PERMISO, targets);
-    if (permiso && !tienePermiso(req.usuario.rol, permiso)) {
+    if (permiso && !tienePermiso(req.usuario.permisos, permiso)) {
       throw new ForbiddenException('Su rol no tiene permiso para esta acción');
     }
     return true;

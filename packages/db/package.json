@@ -6,7 +6,8 @@
   "scripts": {
     "migrar": "node scripts/migrar.mjs",
     "semillas": "node scripts/migrar.mjs --semillas",
-    "test:db": "vitest run"
+    "test:db": "vitest run",
+    "demo": "node scripts/migrar.mjs --demo"
   },
   "dependencies": {
     "pg": "8.13.1"

@@ -97,3 +97,20 @@ export async function reserva(
                          CASE WHEN $5::text = 'PENDIENTE' THEN now() + interval '1 day' END) RETURNING id`,
     [solicitudId, espacio, inicio, fin, estado]);
 }
+
+/** Asigna un rol vigente (con ámbito opcional de carrera o sede). */
+export async function asignarRol(c: Cliente, usuarioId: string, rol: string, ambito: { carrera?: string; sede?: string } = {}) {
+  await c.query(`INSERT INTO seguridad.usuario_rol (usuario_id, rol_id, carrera_id, sede_id)
+                 SELECT $1, id, $3, $4 FROM seguridad.rol WHERE codigo = $2`,
+    [usuarioId, rol, ambito.carrera ?? null, ambito.sede ?? null]);
+}
+
+/** Crea un usuario adicional con los roles indicados. */
+export async function usuarioCon(c: Cliente, roles: [string, { carrera?: string; sede?: string }?][]) {
+  const s = randomUUID().slice(0, 8).toUpperCase();
+  const persona = await uno(c, `INSERT INTO seguridad.persona (tipo_documento, numero_documento, nombres, apellido_paterno)
+                                VALUES ('PAS', $1, 'Usuario', 'Prueba') RETURNING id`, [`U${s}`]);
+  const id = await uno(c, 'INSERT INTO seguridad.usuario (persona_id) VALUES ($1) RETURNING id', [persona]);
+  for (const [rol, ambito] of roles) await asignarRol(c, id, rol, ambito);
+  return id;
+}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { seSolapan, buscarChoques } from './choques';
 import { sugerirSalas, type SalaCandidata } from './sugerencia';
 import { horasOcupadas, indiceOcupacion, jornadaDe } from './ocupacion';
-import { MATRIZ_PERMISOS, tienePermiso } from '../roles';
+import { tienePermiso } from '../roles';
 
 const d = (h: string) => new Date(`2026-11-03T${h}:00`);
 
@@ -83,16 +83,7 @@ describe('ocupación', () => {
   });
 });
 
-describe('roles', () => {
-  it('solo Subdirección puede cancelar cualquier reserva (R5)', () => {
-    const conPermiso = Object.keys(MATRIZ_PERMISOS).filter((r) =>
-      tienePermiso(r as keyof typeof MATRIZ_PERMISOS, 'reserva:cancelar_cualquiera'),
-    );
-    expect(conPermiso).toEqual(['SUBDIRECCION']);
-  });
-});
-
-import { puedeAprobar, siguienteEstado } from './estados';
+import { siguienteEstado } from './estados';
 
 describe('estados y aprobación', () => {
   it('no se puede aprobar una reserva ya rechazada', () => {
@@ -100,11 +91,12 @@ describe('estados y aprobación', () => {
     expect(siguienteEstado('PENDIENTE', 'APROBAR')).toBe('APROBADA');
     expect(siguienteEstado('APROBADA', 'CANCELAR')).toBe('CANCELADA');
   });
-  it('director de carrera solo aprueba lo de su carrera', () => {
-    const base = { rolActor: 'DIRECTOR_CARRERA' as const, carreraActor: 'INF', carreraExclusivaSala: null };
-    expect(puedeAprobar({ ...base, carreraSolicitante: 'INF' })).toBe(true);
-    expect(puedeAprobar({ ...base, carreraSolicitante: 'ENF' })).toBe(false);
-    expect(puedeAprobar({ ...base, carreraSolicitante: 'ENF', carreraExclusivaSala: 'INF' })).toBe(true);
-    expect(puedeAprobar({ ...base, rolActor: 'DOCENTE', carreraSolicitante: 'INF' })).toBe(false);
+  it('una pendiente puede expirar; una aprobada no', () => {
+    expect(siguienteEstado('PENDIENTE', 'EXPIRAR')).toBe('EXPIRADA');
+    expect(siguienteEstado('APROBADA', 'EXPIRAR')).toBeNull();
+  });
+  it('los permisos se leen de la sesión', () => {
+    expect(tienePermiso(['reserva:solicitar'], 'reserva:solicitar')).toBe(true);
+    expect(tienePermiso(['reserva:solicitar'], 'reserva:aprobar')).toBe(false);
   });
 });

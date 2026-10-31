@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { ScrollView, Text } from 'react-native';
 import { reservaCreateSchema } from '@reservaitn/shared';
-import { api } from '../api';
+import { api, sesionActual } from '../api';
 import { Boton, Campo, Tarjeta, colores } from '../ui';
 
-interface Sugerencia { sala: { id: string; codigo: string; capacidad: number }; esperaMin: number }
+interface Sugerencia {
+  espacio: { id: string; codigo: string; nombre: string; capacidad: number; edificio: { sede: { nombre: string } } };
+  esperaMin: number;
+}
 
 /**
  * App de docentes y estudiantes (WBS 1.4.9): consulta de disponibilidad + solicitud (R3, R10, R11).
  * El usuario indica fecha, horario y asistentes; el sistema sugiere sala y alternativas.
  * TODO sprint 3: reemplazar los campos de texto por selectores de fecha/hora nativos.
  */
+const sesionEsEstudiante = () => sesionActual()?.usuario.roles.some((r) => r.codigo === 'ESTUDIANTE') ?? false;
+
 export function Disponibilidad() {
   const manana = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
   const [fecha, setFecha] = useState(manana);
@@ -18,6 +23,8 @@ export function Disponibilidad() {
   const [hasta, setHasta] = useState('11:30');
   const [asistentes, setAsistentes] = useState('20');
   const [motivo, setMotivo] = useState('');
+  const [semanal, setSemanal] = useState(false);
+  const [hastaFecha, setHastaFecha] = useState('');
   const [opciones, setOpciones] = useState<Sugerencia[]>([]);
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
 
@@ -40,13 +47,30 @@ export function Disponibilidad() {
   async function solicitar(o: Sugerencia) {
     const { inicio, fin } = intervalo();
     const desplazado = (d: Date) => new Date(d.getTime() + o.esperaMin * 60_000);
-    const datos = { salaId: o.sala.id, inicio: desplazado(inicio), fin: desplazado(fin), motivo, asistentes: Number(asistentes) };
+    const datos = {
+      espacioId: o.espacio.id,
+      inicio: desplazado(inicio),
+      fin: desplazado(fin),
+      // Los estudiantes reservan para estudiar (R11); el resto, para clases
+      tipoActividad: sesionEsEstudiante() ? 'ESTUDIO' : 'CLASE',
+      descripcion: motivo,
+      asistentes: Number(asistentes),
+      ...(semanal && hastaFecha ? { repetirHasta: hastaFecha } : {}),
+    };
     // Misma validación que el servidor, antes de enviar.
     const v = reservaCreateSchema().safeParse(datos);
     if (!v.success) return setMsg({ ok: false, texto: v.error.issues.map((i) => i.message).join('\n') });
     try {
-      const r = await api<{ estado: string }>('/reservas', { method: 'POST', body: JSON.stringify(datos) });
-      setMsg({ ok: true, texto: r.estado === 'APROBADA' ? 'Reserva confirmada' : 'Solicitud enviada; recibirás un aviso al ser aprobada' });
+      const r = await api<{ reserva: { estado: string }[] }>('/reservas', { method: 'POST', body: JSON.stringify(datos) });
+      const estado = r.reserva[0]?.estado;
+      const n = r.reserva.length;
+      setMsg({
+        ok: true,
+        texto:
+          estado === 'APROBADA'
+            ? `Reserva confirmada${n > 1 ? ` (${n} fechas)` : ''}`
+            : `Solicitud enviada${n > 1 ? ` (${n} fechas)` : ''}; recibirás un aviso cuando se decida`,
+      });
       setOpciones([]);
     } catch (e) {
       setMsg({ ok: false, texto: (e as Error).message });
@@ -60,13 +84,15 @@ export function Disponibilidad() {
       <Campo etiqueta="Hasta (HH:MM)" value={hasta} onChangeText={setHasta} />
       <Campo etiqueta="Asistentes" value={asistentes} onChangeText={setAsistentes} keyboardType="number-pad" />
       <Campo etiqueta="Motivo" value={motivo} onChangeText={setMotivo} placeholder="Ej. clase de recuperación" />
+      <Boton titulo={semanal ? 'Se repite cada semana ✓' : 'Repetir cada semana'} secundario={!semanal} onPress={() => setSemanal(!semanal)} />
+      {semanal && <Campo etiqueta="Repetir hasta (AAAA-MM-DD)" value={hastaFecha} onChangeText={setHastaFecha} />}
       <Boton titulo="Buscar sala" onPress={buscar} />
       {msg && <Text style={{ color: msg.ok ? colores.ok : colores.error }}>{msg.texto}</Text>}
       {opciones.map((o, i) => (
-        <Tarjeta key={o.sala.id}>
-          <Text style={{ fontWeight: '700' }}>{i === 0 && o.esperaMin === 0 ? 'Sugerida: ' : ''}{o.sala.codigo}</Text>
+        <Tarjeta key={o.espacio.id}>
+          <Text style={{ fontWeight: '700' }}>{i === 0 && o.esperaMin === 0 ? 'Sugerida: ' : ''}{o.espacio.codigo} · {o.espacio.nombre}</Text>
           <Text style={{ color: colores.suave }}>
-            Capacidad {o.sala.capacidad}{o.esperaMin > 0 ? ` · se libera en ${o.esperaMin} min` : ' · libre'}
+            {o.espacio.edificio.sede.nombre} · capacidad {o.espacio.capacidad}{o.esperaMin > 0 ? ` · se libera en ${o.esperaMin} min` : ' · libre'}
           </Text>
           <Boton titulo="Solicitar" onPress={() => solicitar(o)} />
         </Tarjeta>

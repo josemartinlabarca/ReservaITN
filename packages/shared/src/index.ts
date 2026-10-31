@@ -1,3 +1,4 @@
+import './errores-zod';
 export * from './roles';
 export * from './validaciones';
 export * from './schemas';

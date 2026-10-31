@@ -1,11 +1,5 @@
 import { Controller, Get, Module, Query } from '@nestjs/common';
-import {
-  HORARIO,
-  horasOcupadas,
-  indiceOcupacion,
-  rangoFechasSchema,
-  type RangoFechas,
-} from '@reservaitn/shared';
+import { HORARIO, horasOcupadas, indiceOcupacion, rangoFechasSchema, type RangoFechas } from '@reservaitn/shared';
 import { PrismaService } from '../comun/prisma.service';
 import { RequierePermiso } from '../comun/auth.guard';
 import { ZodPipe } from '../comun/zod.pipe';
@@ -26,68 +20,74 @@ class DashboardController {
   @RequierePermiso('dashboard:ver')
   @Get('ocupacion')
   async ocupacion(@Query(new ZodPipe(rangoFechasSchema)) q: RangoFechas) {
-    const salas = await this.prisma.sala.findMany({
-      where: { activa: true, sedeId: q.sedeId },
-      include: { sede: { select: { nombre: true } } },
+    const espacios = await this.prisma.espacio.findMany({
+      where: { activo: true, reservable: true, ...(q.sedeId ? { edificio: { sede_id: q.sedeId } } : {}) },
+      select: { id: true, codigo: true, nombre: true, tipo_espacio: { select: { codigo: true } }, edificio: { select: { sede: { select: { nombre: true } } } } },
     });
+    // Ocupación = reservas aprobadas de uso real; la mantención no cuenta como uso (B3)
     const reservas = await this.prisma.reserva.findMany({
       where: {
         estado: 'APROBADA',
-        origen: { not: 'MANTENCION' },
+        solicitud: { origen: { not: 'MANTENCION' } },
         inicio: { lt: q.hasta },
         fin: { gt: q.desde },
-        salaId: { in: salas.map((s) => s.id) },
+        espacio_id: { in: espacios.map((e) => e.id) },
       },
-      select: { salaId: true, inicio: true, fin: true },
+      select: { espacio_id: true, inicio: true, fin: true },
     });
     const rango = { inicio: q.desde, fin: q.hasta };
-    const dispSala = horasDisponiblesPorSala(q.desde, q.hasta);
+    const disponibles = horasDisponiblesPorSala(q.desde, q.hasta);
 
-    const porSala = salas
-      .map((s) => {
-        const horas = horasOcupadas(reservas.filter((r) => r.salaId === s.id), rango);
+    const porEspacio = espacios
+      .map((e) => {
+        const horas = horasOcupadas(reservas.filter((r) => r.espacio_id === e.id), rango);
         return {
-          salaId: s.id,
-          codigo: s.codigo,
-          sede: s.sede.nombre,
-          tipo: s.tipo,
+          espacioId: e.id,
+          codigo: e.codigo,
+          nombre: e.nombre,
+          sede: e.edificio.sede.nombre,
+          tipo: e.tipo_espacio.codigo,
           horasReservadas: Math.round(horas * 10) / 10,
-          indice: indiceOcupacion(horas, dispSala),
+          indice: indiceOcupacion(horas, disponibles),
         };
       })
       .sort((a, b) => b.indice - a.indice);
 
-    const totalHoras = porSala.reduce((acc, s) => acc + s.horasReservadas, 0);
+    const total = porEspacio.reduce((acc, s) => acc + s.horasReservadas, 0);
     return {
       rango: { desde: q.desde, hasta: q.hasta },
-      indiceGlobal: indiceOcupacion(totalHoras, dispSala * salas.length),
+      indiceGlobal: indiceOcupacion(total, disponibles * espacios.length),
       totalReservas: reservas.length,
-      porSala,
+      porEspacio,
     };
   }
 
+  /** Indicadores del Plan de Gestión de Beneficios, calculados desde la vista de trazabilidad. */
   @RequierePermiso('dashboard:ver')
   @Get('indicadores')
   async indicadores(@Query(new ZodPipe(rangoFechasSchema)) q: RangoFechas) {
-    const where = { creadaEn: { gte: q.desde, lt: q.hasta } };
-    const [total, pendientes, liberadas, decididas] = await Promise.all([
-      this.prisma.reserva.count({ where }),
-      this.prisma.reserva.count({ where: { ...where, estado: 'PENDIENTE' } }),
-      this.prisma.reserva.count({ where: { ...where, estado: 'LIBERADA' } }),
-      this.prisma.reserva.findMany({
-        where: { ...where, decididaEn: { not: null }, origen: 'SOLICITUD' },
-        select: { creadaEn: true, decididaEn: true },
-      }),
-    ]);
-    const horasAprob = decididas.map((r) => (r.decididaEn!.getTime() - r.creadaEn.getTime()) / 3_600_000);
+    const [r] = await this.prisma.$queryRaw<
+      { total: bigint; pendientes: bigint; liberadas: bigint; confirmadas: bigint; horas_aprobacion: number | null; con_trazabilidad: bigint }[]
+    >`
+      SELECT count(*)                                                     AS total,
+             count(*) FILTER (WHERE estado = 'PENDIENTE')                 AS pendientes,
+             count(*) FILTER (WHERE estado = 'LIBERADA')                  AS liberadas,
+             count(*) FILTER (WHERE estado IN ('APROBADA', 'LIBERADA'))   AS confirmadas,
+             avg(extract(epoch FROM tiempo_aprobacion) / 3600)
+               FILTER (WHERE origen = 'SOLICITUD' AND decidido_por_usuario_id IS NOT NULL) AS horas_aprobacion,
+             count(*) FILTER (WHERE solicitante_usuario_id IS NOT NULL AND solicitado_en IS NOT NULL
+                                AND (decision IS NOT NULL OR estado = 'PENDIENTE')) AS con_trazabilidad
+        FROM reservas.v_reserva_trazabilidad
+       WHERE inicio >= ${q.desde} AND inicio < ${q.hasta}`;
+    const n = (x: bigint) => Number(x);
     return {
-      totalReservas: total,
-      pendientes,
-      // Indicadores del Plan de Gestión de Beneficios
-      B3_reservasNoUsadas: total ? liberadas / total : 0,
-      B6_tiempoPromedioAprobacionHoras: horasAprob.length
-        ? horasAprob.reduce((a, b) => a + b, 0) / horasAprob.length
-        : null,
+      totalReservas: n(r.total),
+      pendientes: n(r.pendientes),
+      // B3: reservas no usadas = liberadas por falta de check-in ÷ confirmadas
+      B3_reservasNoUsadas: n(r.confirmadas) ? n(r.liberadas) / n(r.confirmadas) : 0,
+      // B6: tiempo promedio de aprobación (meta ≤ 24 h) y % con trazabilidad completa (meta 100 %)
+      B6_tiempoPromedioAprobacionHoras: r.horas_aprobacion === null ? null : Number(r.horas_aprobacion),
+      B6_trazabilidadCompleta: n(r.total) ? n(r.con_trazabilidad) / n(r.total) : 1,
     };
   }
 }

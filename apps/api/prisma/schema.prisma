@@ -1,238 +1,969 @@
-// Modelo de datos ReservaITN (E2 / WBS 1.3.1)
-// Cubre: usuarios, recursos, reservas, aprobaciones, trazabilidad, notificaciones,
-// importación, inventario y mantención.
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["academico", "auditoria", "comunicacion", "institucion", "mantencion", "reservas", "seguridad"]
 }
 
-enum Rol {
-  ESTUDIANTE
-  DOCENTE
-  DIRECTOR_CARRERA
-  DIRECCION_ACADEMICA
-  SUBDIRECCION
-  DATD
-  OPERACIONES
-  ASEO_MANTENCION
-  ADMIN_TI
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model asignatura {
+  id                        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo                    String               @unique
+  nombre                    String
+  horas_semanales           Int                  @db.SmallInt
+  tipo_espacio_requerido_id String?              @db.Uuid
+  creado_en                 DateTime             @default(now()) @db.Timestamptz(6)
+  actualizado_en            DateTime             @default(now()) @db.Timestamptz(6)
+  tipo_espacio              tipo_espacio?        @relation(fields: [tipo_espacio_requerido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  carrera_asignatura        carrera_asignatura[]
+  seccion                   seccion[]
+
+  @@schema("academico")
 }
 
-enum TipoRecurso {
-  SALA
-  LABORATORIO
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model carrera {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo             String               @unique
+  nombre             String
+  activo             Boolean              @default(true)
+  creado_en          DateTime             @default(now()) @db.Timestamptz(6)
+  actualizado_en     DateTime             @default(now()) @db.Timestamptz(6)
+  carrera_asignatura carrera_asignatura[]
+  oferta_carrera     oferta_carrera[]
+  espacio_carrera    espacio_carrera[]
+  usuario_rol        usuario_rol[]
+
+  @@schema("academico")
 }
 
-enum EstadoReserva {
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model carrera_asignatura {
+  carrera_id    String     @db.Uuid
+  asignatura_id String     @db.Uuid
+  nivel         Int        @db.SmallInt
+  asignatura    asignatura @relation(fields: [asignatura_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  carrera       carrera    @relation(fields: [carrera_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([carrera_id, asignatura_id])
+  @@index([asignatura_id])
+  @@schema("academico")
+}
+
+model matricula {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  persona_id        String            @db.Uuid
+  oferta_carrera_id String            @db.Uuid
+  periodo_id        String            @db.Uuid
+  estado            estado_matricula  @default(VIGENTE)
+  creado_en         DateTime          @default(now()) @db.Timestamptz(6)
+  actualizado_en    DateTime          @default(now()) @db.Timestamptz(6)
+  oferta_carrera    oferta_carrera    @relation(fields: [oferta_carrera_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  periodo_academico periodo_academico @relation(fields: [periodo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  persona           persona           @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([persona_id, oferta_carrera_id, periodo_id])
+  @@index([oferta_carrera_id, periodo_id])
+  @@schema("academico")
+}
+
+model oferta_carrera {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  carrera_id String      @db.Uuid
+  sede_id    String      @db.Uuid
+  jornada    jornada
+  activo     Boolean     @default(true)
+  matricula  matricula[]
+  carrera    carrera     @relation(fields: [carrera_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sede       sede        @relation(fields: [sede_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  seccion    seccion[]
+
+  @@unique([carrera_id, sede_id, jornada])
+  @@index([sede_id])
+  @@schema("academico")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
+model periodo_academico {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo       String         @unique
+  nombre       String
+  fecha_inicio DateTime       @db.Date
+  fecha_fin    DateTime       @db.Date
+  estado       estado_periodo @default(PLANIFICACION)
+  matricula    matricula[]
+  seccion      seccion[]
+  importacion  importacion[]
+
+  @@schema("academico")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model seccion {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  periodo_id         String            @db.Uuid
+  asignatura_id      String            @db.Uuid
+  oferta_carrera_id  String            @db.Uuid
+  codigo             String
+  docente_persona_id String?           @db.Uuid
+  cupo               Int
+  inscritos          Int               @default(0)
+  creado_en          DateTime          @default(now()) @db.Timestamptz(6)
+  actualizado_en     DateTime          @default(now()) @db.Timestamptz(6)
+  asignatura         asignatura        @relation(fields: [asignatura_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  persona            persona?          @relation(fields: [docente_persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  oferta_carrera     oferta_carrera    @relation(fields: [oferta_carrera_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  periodo_academico  periodo_academico @relation(fields: [periodo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  solicitud          solicitud[]
+
+  @@unique([periodo_id, asignatura_id, oferta_carrera_id, codigo])
+  @@index([docente_persona_id])
+  @@index([oferta_carrera_id])
+  @@schema("academico")
+}
+
+model evento {
+  id               BigInt    @id @default(autoincrement())
+  esquema          String
+  tabla            String
+  registro_id      String?
+  operacion        operacion
+  actor_usuario_id String?   @db.Uuid
+  datos_antes      Json?
+  datos_despues    Json?
+  ocurrido_en      DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([actor_usuario_id])
+  @@index([esquema, tabla, registro_id])
+  @@index([ocurrido_en], map: "evento_por_fecha", type: Brin)
+  @@schema("auditoria")
+}
+
+model dispositivo {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String     @db.Uuid
+  token_push String     @unique
+  plataforma plataforma
+  ultimo_uso DateTime   @default(now()) @db.Timestamptz(6)
+  creado_en  DateTime   @default(now()) @db.Timestamptz(6)
+  usuario    usuario    @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([usuario_id])
+  @@schema("comunicacion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model envio {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  notificacion_id String       @db.Uuid
+  canal           canal
+  estado          estado_envio @default(PENDIENTE)
+  intentos        Int          @default(0) @db.SmallInt
+  ultimo_error    String?
+  enviado_en      DateTime?    @db.Timestamptz(6)
+  creado_en       DateTime     @default(now()) @db.Timestamptz(6)
+  notificacion    notificacion @relation(fields: [notificacion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([notificacion_id, canal])
+  @@schema("comunicacion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model evento_notificacion {
+  codigo       String         @id
+  descripcion  String
+  obligatorio  Boolean        @default(false)
+  notificacion notificacion[]
+  plantilla    plantilla[]
+  preferencia  preferencia[]
+
+  @@schema("comunicacion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model notificacion {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id          String              @db.Uuid
+  evento_codigo       String
+  titulo              String
+  cuerpo              String
+  solicitud_id        String?             @db.Uuid
+  reserva_id          String?             @db.Uuid
+  orden_trabajo_id    String?             @db.Uuid
+  leida_en            DateTime?           @db.Timestamptz(6)
+  creado_en           DateTime            @default(now()) @db.Timestamptz(6)
+  envio               envio[]
+  evento_notificacion evento_notificacion @relation(fields: [evento_codigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
+  orden_trabajo       orden_trabajo?      @relation(fields: [orden_trabajo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reserva             reserva?            @relation(fields: [reserva_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  solicitud           solicitud?          @relation(fields: [solicitud_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario             usuario             @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([usuario_id, creado_en(sort: Desc)])
+  @@schema("comunicacion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model plantilla {
+  evento_codigo       String
+  canal               canal
+  asunto              String?
+  cuerpo              String
+  actualizado_en      DateTime            @default(now()) @db.Timestamptz(6)
+  evento_notificacion evento_notificacion @relation(fields: [evento_codigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([evento_codigo, canal])
+  @@schema("comunicacion")
+}
+
+model preferencia {
+  usuario_id          String              @db.Uuid
+  evento_codigo       String
+  canal               canal
+  activo              Boolean
+  evento_notificacion evento_notificacion @relation(fields: [evento_codigo], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
+  usuario             usuario             @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([usuario_id, evento_codigo, canal])
+  @@schema("comunicacion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
+model bloque_horario {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo      String   @unique
+  jornada     jornada
+  hora_inicio DateTime @db.Time(6)
+  hora_fin    DateTime @db.Time(6)
+  orden       Int      @unique @db.SmallInt
+
+  @@schema("institucion")
+}
+
+model dia_no_habil {
+  id      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fecha   DateTime          @db.Date
+  sede_id String?           @db.Uuid
+  tipo    tipo_dia_no_habil
+  motivo  String
+  sede    sede?             @relation(fields: [sede_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([fecha, sede_id])
+  @@schema("institucion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model edificio {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sede_id        String    @db.Uuid
+  codigo         String
+  nombre         String
+  activo         Boolean   @default(true)
+  creado_en      DateTime  @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime  @default(now()) @db.Timestamptz(6)
+  sede           sede      @relation(fields: [sede_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  espacio        espacio[]
+
+  @@unique([sede_id, codigo])
+  @@schema("institucion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model espacio {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  edificio_id     String            @db.Uuid
+  tipo_espacio_id String            @db.Uuid
+  codigo          String
+  nombre          String
+  piso            Int               @default(1) @db.SmallInt
+  capacidad       Int
+  accesible       Boolean           @default(false)
+  reservable      Boolean           @default(true)
+  token_qr        String            @unique @default(dbgenerated("replace((gen_random_uuid())::text, '-'::text, ''::text)"))
+  activo          Boolean           @default(true)
+  creado_en       DateTime          @default(now()) @db.Timestamptz(6)
+  actualizado_en  DateTime          @default(now()) @db.Timestamptz(6)
+  edificio        edificio          @relation(fields: [edificio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipo_espacio    tipo_espacio      @relation(fields: [tipo_espacio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  espacio_carrera espacio_carrera[]
+  espacio_item    espacio_item[]
+  inspeccion      inspeccion[]
+  orden_trabajo   orden_trabajo[]
+  reporte_danio   reporte_danio[]
+  reserva         reserva[]
+
+  @@unique([edificio_id, codigo])
+  @@index([tipo_espacio_id])
+  @@schema("institucion")
+}
+
+model espacio_carrera {
+  espacio_id String            @db.Uuid
+  carrera_id String            @db.Uuid
+  prioridad  prioridad_espacio
+  carrera    carrera           @relation(fields: [carrera_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  espacio    espacio           @relation(fields: [espacio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([espacio_id, carrera_id])
+  @@index([carrera_id])
+  @@schema("institucion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model espacio_item {
+  espacio_id        String  @db.Uuid
+  item_id           String  @db.Uuid
+  cantidad_esperada Int
+  espacio           espacio @relation(fields: [espacio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  item              item    @relation(fields: [item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([espacio_id, item_id])
+  @@index([item_id])
+  @@schema("institucion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model horario_sede {
+  sede_id    String   @db.Uuid
+  dia_semana Int      @db.SmallInt
+  apertura   DateTime @db.Time(6)
+  cierre     DateTime @db.Time(6)
+  sede       sede     @relation(fields: [sede_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([sede_id, dia_semana])
+  @@schema("institucion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model institucion {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre         String
+  rut            String?
+  zona_horaria   String   @default("America/Santiago")
+  unica          Boolean  @unique @default(true)
+  creado_en      DateTime @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime @default(now()) @db.Timestamptz(6)
+  sede           sede[]
+
+  @@schema("institucion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model item {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo             String               @unique
+  nombre             String
+  categoria          categoria_item
+  filtrable          Boolean              @default(false)
+  activo             Boolean              @default(true)
+  espacio_item       espacio_item[]
+  inspeccion_detalle inspeccion_detalle[]
+  reporte_danio      reporte_danio[]
+
+  @@schema("institucion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model parametro {
+  clave          String         @id
+  valor          String
+  tipo           tipo_parametro
+  descripcion    String
+  actualizado_en DateTime       @default(now()) @db.Timestamptz(6)
+
+  @@schema("institucion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model sede {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  institucion_id String           @db.Uuid
+  codigo         String           @unique
+  nombre         String
+  direccion      String?
+  comuna         String?
+  activo         Boolean          @default(true)
+  creado_en      DateTime         @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime         @default(now()) @db.Timestamptz(6)
+  oferta_carrera oferta_carrera[]
+  dia_no_habil   dia_no_habil[]
+  edificio       edificio[]
+  horario_sede   horario_sede[]
+  institucion    institucion      @relation(fields: [institucion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario_rol    usuario_rol[]
+
+  @@schema("institucion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tipo_espacio {
+  id                         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo                     String             @unique
+  nombre                     String
+  requiere_aprobacion        Boolean            @default(true)
+  reservable_por_estudiantes Boolean            @default(false)
+  activo                     Boolean            @default(true)
+  asignatura                 asignatura[]
+  espacio                    espacio[]
+  regla_aprobacion           regla_aprobacion[]
+
+  @@schema("institucion")
+}
+
+model inspeccion {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  espacio_id         String               @db.Uuid
+  usuario_id         String               @db.Uuid
+  realizada_en       DateTime             @default(now()) @db.Timestamptz(6)
+  observacion        String?
+  espacio            espacio              @relation(fields: [espacio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario            usuario              @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  inspeccion_detalle inspeccion_detalle[]
+
+  @@index([espacio_id, realizada_en(sort: Desc)])
+  @@schema("mantencion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model inspeccion_detalle {
+  inspeccion_id     String     @db.Uuid
+  item_id           String     @db.Uuid
+  cantidad_contada  Int
+  cantidad_esperada Int
+  inspeccion        inspeccion @relation(fields: [inspeccion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  item              item       @relation(fields: [item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([inspeccion_id, item_id])
+  @@schema("mantencion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model orden_trabajo {
+  id                    String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  espacio_id            String          @db.Uuid
+  tipo                  tipo_orden
+  prioridad             prioridad_orden @default(MEDIA)
+  estado                estado_orden    @default(ABIERTA)
+  asignada_a_usuario_id String?         @db.Uuid
+  solicitud_bloqueo_id  String?         @unique @db.Uuid
+  solucion              String?
+  creado_en             DateTime        @default(now()) @db.Timestamptz(6)
+  actualizado_en        DateTime        @default(now()) @db.Timestamptz(6)
+  resuelta_en           DateTime?       @db.Timestamptz(6)
+  notificacion          notificacion[]
+  usuario               usuario?        @relation(fields: [asignada_a_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  espacio               espacio         @relation(fields: [espacio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  solicitud             solicitud?      @relation(fields: [solicitud_bloqueo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reporte_danio         reporte_danio[]
+
+  @@unique([id, espacio_id])
+  @@index([estado, prioridad])
+  @@schema("mantencion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model reporte_danio {
+  id                       String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  espacio_id               String               @db.Uuid
+  item_id                  String?              @db.Uuid
+  reportado_por_usuario_id String               @db.Uuid
+  descripcion              String
+  severidad                severidad
+  orden_trabajo_id         String?              @db.Uuid
+  creado_en                DateTime             @default(now()) @db.Timestamptz(6)
+  espacio                  espacio              @relation(fields: [espacio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  item                     item?                @relation(fields: [item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario                  usuario              @relation(fields: [reportado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orden_trabajo            orden_trabajo?       @relation(fields: [orden_trabajo_id, espacio_id], references: [id, espacio_id], onDelete: NoAction, onUpdate: NoAction, map: "reporte_misma_sala_que_orden")
+  reporte_danio_foto       reporte_danio_foto[]
+
+  @@index([espacio_id, creado_en(sort: Desc)])
+  @@index([orden_trabajo_id])
+  @@schema("mantencion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model reporte_danio_foto {
+  id                   String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reporte_danio_id     String        @db.Uuid
+  clave_almacenamiento String        @unique
+  tipo_mime            String
+  tamano_bytes         Int
+  creado_en            DateTime      @default(now()) @db.Timestamptz(6)
+  reporte_danio        reporte_danio @relation(fields: [reporte_danio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([reporte_danio_id])
+  @@schema("mantencion")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model aprobacion {
+  id                      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  solicitud_id            String            @unique @db.Uuid
+  regla_aprobacion_id     String?           @db.Uuid
+  decision                decision
+  decidido_por_usuario_id String?           @db.Uuid
+  decidido_en             DateTime          @default(now()) @db.Timestamptz(6)
+  comentario              String?
+  usuario                 usuario?          @relation(fields: [decidido_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  regla_aprobacion        regla_aprobacion? @relation(fields: [regla_aprobacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  solicitud               solicitud         @relation(fields: [solicitud_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([decidido_por_usuario_id])
+  @@schema("reservas")
+}
+
+model check_in {
+  reserva_id    String          @id @db.Uuid
+  usuario_id    String          @db.Uuid
+  metodo        metodo_check_in
+  registrado_en DateTime        @default(now()) @db.Timestamptz(6)
+  reserva       reserva         @relation(fields: [reserva_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario       usuario         @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("reservas")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model importacion {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  archivo_nombre    String
+  periodo_id        String              @db.Uuid
+  usuario_id        String              @db.Uuid
+  total_filas       Int
+  creado_en         DateTime            @default(now()) @db.Timestamptz(6)
+  periodo_academico periodo_academico   @relation(fields: [periodo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario           usuario             @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  importacion_error importacion_error[]
+  solicitud         solicitud[]
+
+  @@schema("reservas")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model importacion_error {
+  id             BigInt      @id @default(autoincrement())
+  importacion_id String      @db.Uuid
+  fila           Int
+  columna        String?
+  mensaje        String
+  importacion    importacion @relation(fields: [importacion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([importacion_id, fila, columna])
+  @@schema("reservas")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
+model patron_recurrencia {
+  solicitud_id String    @db.Uuid
+  dia_semana   Int       @db.SmallInt
+  hora_inicio  DateTime  @db.Time(6)
+  hora_fin     DateTime  @db.Time(6)
+  solicitud    solicitud @relation(fields: [solicitud_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([solicitud_id, dia_semana, hora_inicio])
+  @@schema("reservas")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model regla_aprobacion {
+  id                                           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo_espacio_id                              String?           @db.Uuid
+  rol_solicitante_id                           String?           @db.Uuid
+  tipo_actividad_id                            String?           @db.Uuid
+  accion                                       accion_regla
+  rol_aprobador_id                             String?           @db.Uuid
+  ambito_aprobador                             ambito_aprobador?
+  prioridad                                    Int               @default(0)
+  activo                                       Boolean           @default(true)
+  aprobacion                                   aprobacion[]
+  rol_regla_aprobacion_rol_aprobador_idTorol   rol?              @relation("regla_aprobacion_rol_aprobador_idTorol", fields: [rol_aprobador_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rol_regla_aprobacion_rol_solicitante_idTorol rol?              @relation("regla_aprobacion_rol_solicitante_idTorol", fields: [rol_solicitante_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipo_actividad                               tipo_actividad?   @relation(fields: [tipo_actividad_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipo_espacio                                 tipo_espacio?     @relation(fields: [tipo_espacio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([tipo_espacio_id, rol_solicitante_id, tipo_actividad_id], map: "regla_aprobacion_unica")
+  @@schema("reservas")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
+model reserva {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  solicitud_id   String         @db.Uuid
+  espacio_id     String         @db.Uuid
+  inicio         DateTime       @db.Timestamptz(6)
+  fin            DateTime       @db.Timestamptz(6)
+  estado         estado_reserva @default(PENDIENTE)
+  expira_en      DateTime?      @db.Timestamptz(6)
+  creado_en      DateTime       @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime       @default(now()) @db.Timestamptz(6)
+  notificacion   notificacion[]
+  check_in       check_in?
+  espacio        espacio        @relation(fields: [espacio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  solicitud      solicitud      @relation(fields: [solicitud_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([espacio_id, inicio])
+  @@index([solicitud_id])
+  @@schema("reservas")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model solicitud {
+  id                     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  solicitante_usuario_id String               @db.Uuid
+  tipo_actividad_id      String               @db.Uuid
+  seccion_id             String?              @db.Uuid
+  origen                 origen               @default(SOLICITUD)
+  descripcion            String
+  asistentes             Int
+  fecha_desde            DateTime?            @db.Date
+  fecha_hasta            DateTime?            @db.Date
+  importacion_id         String?              @db.Uuid
+  creado_en              DateTime             @default(now()) @db.Timestamptz(6)
+  notificacion           notificacion[]
+  orden_trabajo          orden_trabajo?
+  aprobacion             aprobacion?
+  patron_recurrencia     patron_recurrencia[]
+  reserva                reserva[]
+  importacion            importacion?         @relation(fields: [importacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  seccion                seccion?             @relation(fields: [seccion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario                usuario              @relation(fields: [solicitante_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipo_actividad         tipo_actividad       @relation(fields: [tipo_actividad_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([importacion_id])
+  @@index([seccion_id])
+  @@index([solicitante_usuario_id, creado_en(sort: Desc)])
+  @@schema("reservas")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tipo_actividad {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo           String             @unique
+  nombre           String
+  activo           Boolean            @default(true)
+  regla_aprobacion regla_aprobacion[]
+  solicitud        solicitud[]
+
+  @@schema("reservas")
+}
+
+model identidad_externa {
+  proveedor  proveedor_identidad
+  sujeto     String
+  usuario_id String              @db.Uuid
+  creado_en  DateTime            @default(now()) @db.Timestamptz(6)
+  usuario    usuario             @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([proveedor, sujeto])
+  @@index([usuario_id])
+  @@schema("seguridad")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model permiso {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo      String        @unique
+  modulo      String
+  descripcion String
+  rol_permiso rol_permiso[]
+
+  @@schema("seguridad")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model persona {
+  id                                                    String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo_documento                                        String
+  numero_documento                                      String
+  nombres                                               String
+  apellido_paterno                                      String
+  apellido_materno                                      String?
+  email                                                 String?        @unique @db.Citext
+  telefono                                              String?
+  creado_en                                             DateTime       @default(now()) @db.Timestamptz(6)
+  actualizado_en                                        DateTime       @default(now()) @db.Timestamptz(6)
+  matricula                                             matricula[]
+  seccion                                               seccion[]
+  tipo_documento_persona_tipo_documentoTotipo_documento tipo_documento @relation("persona_tipo_documentoTotipo_documento", fields: [tipo_documento], references: [codigo], onDelete: NoAction, onUpdate: NoAction)
+  usuario                                               usuario?
+
+  @@unique([tipo_documento, numero_documento])
+  @@schema("seguridad")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model rol {
+  id                                                        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo                                                    String             @unique
+  nombre                                                    String
+  descripcion                                               String?
+  es_sistema                                                Boolean            @default(false)
+  regla_aprobacion_regla_aprobacion_rol_aprobador_idTorol   regla_aprobacion[] @relation("regla_aprobacion_rol_aprobador_idTorol")
+  regla_aprobacion_regla_aprobacion_rol_solicitante_idTorol regla_aprobacion[] @relation("regla_aprobacion_rol_solicitante_idTorol")
+  rol_permiso                                               rol_permiso[]
+  usuario_rol                                               usuario_rol[]
+
+  @@schema("seguridad")
+}
+
+model rol_permiso {
+  rol_id     String  @db.Uuid
+  permiso_id String  @db.Uuid
+  permiso    permiso @relation(fields: [permiso_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  rol        rol     @relation(fields: [rol_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([rol_id, permiso_id])
+  @@index([permiso_id])
+  @@schema("seguridad")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tipo_documento {
+  codigo                                         String    @id
+  nombre                                         String
+  valida_digito                                  Boolean   @default(false)
+  persona_persona_tipo_documentoTotipo_documento persona[] @relation("persona_tipo_documentoTotipo_documento")
+
+  @@schema("seguridad")
+}
+
+model usuario {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  persona_id        String              @unique @db.Uuid
+  password_hash     String?
+  estado            estado_usuario      @default(ACTIVO)
+  ultimo_acceso     DateTime?           @db.Timestamptz(6)
+  creado_en         DateTime            @default(now()) @db.Timestamptz(6)
+  actualizado_en    DateTime            @default(now()) @db.Timestamptz(6)
+  dispositivo       dispositivo[]
+  notificacion      notificacion[]
+  preferencia       preferencia[]
+  inspeccion        inspeccion[]
+  orden_trabajo     orden_trabajo[]
+  reporte_danio     reporte_danio[]
+  aprobacion        aprobacion[]
+  check_in          check_in[]
+  importacion       importacion[]
+  solicitud         solicitud[]
+  identidad_externa identidad_externa[]
+  persona           persona             @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario_rol       usuario_rol[]
+
+  @@schema("seguridad")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model usuario_rol {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id    String    @db.Uuid
+  rol_id        String    @db.Uuid
+  sede_id       String?   @db.Uuid
+  carrera_id    String?   @db.Uuid
+  vigente_desde DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  vigente_hasta DateTime? @db.Date
+  carrera       carrera?  @relation(fields: [carrera_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rol           rol       @relation(fields: [rol_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sede          sede?     @relation(fields: [sede_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario       usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([usuario_id, rol_id, sede_id, carrera_id])
+  @@index([rol_id, carrera_id])
+  @@schema("seguridad")
+}
+
+enum estado_matricula {
+  VIGENTE
+  SUSPENDIDA
+  RETIRADA
+  EGRESADA
+
+  @@schema("academico")
+}
+
+enum estado_periodo {
+  PLANIFICACION
+  EN_CURSO
+  CERRADO
+
+  @@schema("academico")
+}
+
+enum operacion {
+  INSERT
+  UPDATE
+  DELETE
+
+  @@schema("auditoria")
+}
+
+enum canal {
+  APP
+  CORREO
+  PUSH
+
+  @@schema("comunicacion")
+}
+
+enum estado_envio {
+  PENDIENTE
+  ENVIADO
+  FALLIDO
+
+  @@schema("comunicacion")
+}
+
+enum plataforma {
+  ANDROID
+  IOS
+
+  @@schema("comunicacion")
+}
+
+enum categoria_item {
+  MOBILIARIO
+  TECNOLOGIA
+  CLINICO
+  OTRO
+
+  @@schema("institucion")
+}
+
+enum jornada {
+  DIURNA
+  VESPERTINA
+
+  @@schema("institucion")
+}
+
+enum prioridad_espacio {
+  EXCLUSIVO
+  PREFERENTE
+
+  @@schema("institucion")
+}
+
+enum tipo_dia_no_habil {
+  FERIADO
+  RECESO
+  EVENTO
+
+  @@schema("institucion")
+}
+
+enum tipo_parametro {
+  ENTERO
+  DECIMAL
+  TEXTO
+  BOOLEANO
+
+  @@schema("institucion")
+}
+
+enum estado_orden {
+  ABIERTA
+  ASIGNADA
+  EN_PROCESO
+  RESUELTA
+  CANCELADA
+
+  @@schema("mantencion")
+}
+
+enum prioridad_orden {
+  BAJA
+  MEDIA
+  ALTA
+  URGENTE
+
+  @@schema("mantencion")
+}
+
+enum severidad {
+  BAJA
+  MEDIA
+  ALTA
+
+  @@schema("mantencion")
+}
+
+enum tipo_orden {
+  CORRECTIVA
+  PREVENTIVA
+
+  @@schema("mantencion")
+}
+
+enum accion_regla {
+  AUTO_APROBAR
+  REQUIERE_APROBACION
+  PROHIBIDO
+
+  @@schema("reservas")
+}
+
+enum ambito_aprobador {
+  CARRERA_SOLICITANTE
+  CARRERA_ESPACIO
+  INSTITUCION
+
+  @@schema("reservas")
+}
+
+enum decision {
+  APROBADA
+  RECHAZADA
+
+  @@schema("reservas")
+}
+
+enum estado_reserva {
   PENDIENTE
   APROBADA
   RECHAZADA
   CANCELADA
+  EXPIRADA
   LIBERADA
+
+  @@schema("reservas")
 }
 
-enum OrigenReserva {
+enum metodo_check_in {
+  QR
+  MANUAL
+
+  @@schema("reservas")
+}
+
+enum origen {
   SOLICITUD
-  PLANIFICACION // cargada desde el Excel semestral
-  MANTENCION // bloqueo para aseo/mantención: también participa en el anti-choques
+  PLANIFICACION
+  MANTENCION
+
+  @@schema("reservas")
 }
 
-enum SeveridadDanio {
-  BAJA
-  MEDIA
-  ALTA
+enum estado_usuario {
+  ACTIVO
+  BLOQUEADO
+
+  @@schema("seguridad")
 }
 
-enum EstadoDanio {
-  ABIERTO
-  EN_PROCESO
-  RESUELTO
-}
+enum proveedor_identidad {
+  GOOGLE
+  MICROSOFT
 
-model Sede {
-  id        String   @id @default(uuid()) @db.Uuid
-  nombre    String   @unique
-  direccion String?
-  salas     Sala[]
-  creadoEn  DateTime @default(now()) @map("creado_en")
-
-  @@map("sedes")
-}
-
-model Carrera {
-  id               String    @id @default(uuid()) @db.Uuid
-  codigo           String    @unique
-  nombre           String
-  usuarios         Usuario[]
-  salasExclusivas  Sala[]
-
-  @@map("carreras")
-}
-
-model Usuario {
-  id            String    @id @default(uuid()) @db.Uuid
-  rut           String    @unique
-  email         String    @unique
-  nombre        String
-  rol           Rol
-  passwordHash  String    @map("password_hash")
-  activo        Boolean   @default(true)
-  carreraId     String?   @map("carrera_id") @db.Uuid
-  carrera       Carrera?  @relation(fields: [carreraId], references: [id])
-  creadoEn      DateTime  @default(now()) @map("creado_en")
-
-  reservasSolicitadas Reserva[]       @relation("solicitante")
-  reservasAprobadas   Reserva[]       @relation("aprobador")
-  eventos             EventoReserva[]
-  notificaciones      Notificacion[]
-  conteos             ConteoInventario[]
-  danios              ReporteDanio[]
-  importaciones       Importacion[]
-
-  @@map("usuarios")
-}
-
-model Sala {
-  id                  String       @id @default(uuid()) @db.Uuid
-  codigo              String
-  nombre              String
-  tipo                TipoRecurso
-  capacidad           Int
-  equipamiento        String[]     @default([])
-  activa              Boolean      @default(true)
-  sedeId              String       @map("sede_id") @db.Uuid
-  sede                Sede         @relation(fields: [sedeId], references: [id])
-  carreraExclusivaId  String?      @map("carrera_exclusiva_id") @db.Uuid
-  carreraExclusiva    Carrera?     @relation(fields: [carreraExclusivaId], references: [id])
-
-  reservas      Reserva[]
-  inventario    ItemInventario[]
-  danios        ReporteDanio[]
-
-  @@unique([sedeId, codigo])
-  @@map("salas")
-}
-
-/// Garantía anti-choques (R1): restricción EXCLUDE en la migración SQL
-/// "reservas_sin_choque": ninguna sala puede tener dos reservas APROBADAS que se solapen.
-model Reserva {
-  id             String         @id @default(uuid()) @db.Uuid
-  salaId         String         @map("sala_id") @db.Uuid
-  sala           Sala           @relation(fields: [salaId], references: [id])
-  solicitanteId  String         @map("solicitante_id") @db.Uuid
-  solicitante    Usuario        @relation("solicitante", fields: [solicitanteId], references: [id])
-  aprobadorId    String?        @map("aprobador_id") @db.Uuid
-  aprobador      Usuario?       @relation("aprobador", fields: [aprobadorId], references: [id])
-  inicio         DateTime       @db.Timestamptz(3)
-  fin            DateTime       @db.Timestamptz(3)
-  motivo         String
-  asistentes     Int
-  estado         EstadoReserva  @default(PENDIENTE)
-  origen         OrigenReserva  @default(SOLICITUD)
-  decididaEn     DateTime?      @map("decidida_en")
-  checkInEn      DateTime?      @map("check_in_en") // para liberar reservas no usadas (R18)
-  importacionId  String?        @map("importacion_id") @db.Uuid
-  importacion    Importacion?   @relation(fields: [importacionId], references: [id])
-  creadaEn       DateTime       @default(now()) @map("creada_en")
-  actualizadaEn  DateTime       @updatedAt @map("actualizada_en")
-
-  eventos        EventoReserva[]
-  notificaciones Notificacion[]
-
-  @@index([salaId, inicio])
-  @@index([estado])
-  @@map("reservas")
-}
-
-/// Trazabilidad (R7 / E9): bitácora inmutable de cada cambio de estado.
-model EventoReserva {
-  id              String          @id @default(uuid()) @db.Uuid
-  reservaId       String          @map("reserva_id") @db.Uuid
-  reserva         Reserva         @relation(fields: [reservaId], references: [id])
-  actorId         String          @map("actor_id") @db.Uuid
-  actor           Usuario         @relation(fields: [actorId], references: [id])
-  accion          String          // CREADA, APROBADA, RECHAZADA, CANCELADA, LIBERADA, CHECK_IN
-  estadoAnterior  EstadoReserva?  @map("estado_anterior")
-  estadoNuevo     EstadoReserva   @map("estado_nuevo")
-  comentario      String?
-  creadoEn        DateTime        @default(now()) @map("creado_en")
-
-  @@index([reservaId])
-  @@map("eventos_reserva")
-}
-
-model Notificacion {
-  id         String    @id @default(uuid()) @db.Uuid
-  usuarioId  String    @map("usuario_id") @db.Uuid
-  usuario    Usuario   @relation(fields: [usuarioId], references: [id])
-  reservaId  String?   @map("reserva_id") @db.Uuid
-  reserva    Reserva?  @relation(fields: [reservaId], references: [id])
-  titulo     String
-  cuerpo     String
-  leida      Boolean   @default(false)
-  enviadaEn  DateTime? @map("enviada_en") // correo / push
-  creadaEn   DateTime  @default(now()) @map("creada_en")
-
-  @@index([usuarioId, leida])
-  @@map("notificaciones")
-}
-
-/// Cada carga del Excel de planificación (E5): permite medir el % importado sin intervención.
-model Importacion {
-  id             String    @id @default(uuid()) @db.Uuid
-  archivoNombre  String    @map("archivo_nombre")
-  usuarioId      String    @map("usuario_id") @db.Uuid
-  usuario        Usuario   @relation(fields: [usuarioId], references: [id])
-  totalFilas     Int       @map("total_filas")
-  filasOk        Int       @map("filas_ok")
-  errores        Json      @default("[]")
-  creadaEn       DateTime  @default(now()) @map("creada_en")
-  reservas       Reserva[]
-
-  @@map("importaciones")
-}
-
-model ItemInventario {
-  id                String   @id @default(uuid()) @db.Uuid
-  salaId            String   @map("sala_id") @db.Uuid
-  sala              Sala     @relation(fields: [salaId], references: [id])
-  nombre            String
-  cantidadEsperada  Int      @map("cantidad_esperada")
-  conteos           ConteoInventario[]
-
-  @@unique([salaId, nombre])
-  @@map("items_inventario")
-}
-
-model ConteoInventario {
-  id         String         @id @default(uuid()) @db.Uuid
-  itemId     String         @map("item_id") @db.Uuid
-  item       ItemInventario @relation(fields: [itemId], references: [id])
-  usuarioId  String         @map("usuario_id") @db.Uuid
-  usuario    Usuario        @relation(fields: [usuarioId], references: [id])
-  cantidad   Int
-  creadoEn   DateTime       @default(now()) @map("creado_en")
-
-  @@map("conteos_inventario")
-}
-
-model ReporteDanio {
-  id              String          @id @default(uuid()) @db.Uuid
-  salaId          String          @map("sala_id") @db.Uuid
-  sala            Sala            @relation(fields: [salaId], references: [id])
-  reportadoPorId  String          @map("reportado_por_id") @db.Uuid
-  reportadoPor    Usuario         @relation(fields: [reportadoPorId], references: [id])
-  descripcion     String
-  severidad       SeveridadDanio
-  fotoUrl         String?         @map("foto_url")
-  estado          EstadoDanio     @default(ABIERTO)
-  creadoEn        DateTime        @default(now()) @map("creado_en")
-  resueltoEn      DateTime?       @map("resuelto_en")
-
-  @@map("reportes_danio")
+  @@schema("seguridad")
 }

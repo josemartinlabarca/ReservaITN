@@ -10,6 +10,7 @@ import { ReservasModule } from './reservas/reservas.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { MantencionModule } from './mantencion/mantencion.module';
+import { TareasModule } from './tareas/tareas.module';
 import { Publico } from './comun/auth.guard';
 
 @Controller('health')
@@ -39,6 +40,7 @@ class HealthController {
     DashboardModule, // 1.4.7
     ProyeccionModule, // 1.4.8
     MantencionModule, // 1.4.10 (1.4.9 es solo cliente móvil)
+    TareasModule, // vencimiento de pendientes y liberación sin check-in
   ],
   controllers: [HealthController],
 })

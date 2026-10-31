@@ -37,15 +37,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Compilar, tipos y pruebas unitarias
         run: pnpm turbo run build typecheck test
-      - name: Migraciones
-        run: pnpm --filter @reservaitn/api prisma:deploy
-      - name: Pruebas de integración (anti-choques, 200 casos)
+      - name: Base de datos v1 (migraciones, catálogos y datos de demostración)
+        run: pnpm --filter @reservaitn/db demo
+      - name: Pruebas de restricciones del modelo (40 casos)
+        run: pnpm --filter @reservaitn/db test:db
+      - name: Pruebas de integración de la API (flujo de reservas, importación, concurrencia)
         run: pnpm --filter @reservaitn/api test:db
-      - name: Modelo de datos v1 (migraciones, semillas y 36 pruebas de restricciones)
-        env:
-          DATABASE_URL: postgresql://reservaitn:reservaitn@localhost:5432/reservaitn_modelo
-        run: |
-          PGPASSWORD=reservaitn createdb -h localhost -U reservaitn reservaitn_modelo
-          pnpm --filter @reservaitn/db semillas
-          pnpm --filter @reservaitn/db migrar
-          pnpm --filter @reservaitn/db test:db

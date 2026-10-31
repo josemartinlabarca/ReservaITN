@@ -1,5 +1,7 @@
 /**
- * Roles del sistema (E4 / WBS 1.4.1). Fuente única para API, web y móvil.
+ * Roles y permisos (E4 / WBS 1.4.1).
+ * La fuente de verdad es la base de datos (seguridad.rol, seguridad.rol_permiso): un rol se
+ * configura sin programar. Aquí solo están los códigos, para tener tipos en web, móvil y API.
  */
 export const ROLES = [
   'ESTUDIANTE',
@@ -17,6 +19,7 @@ export type Rol = (typeof ROLES)[number];
 export const PERMISOS = [
   'reserva:solicitar',
   'reserva:aprobar',
+  'reserva:aprobar_cualquiera',
   'reserva:cancelar_cualquiera',
   'recurso:gestionar',
   'planificacion:importar',
@@ -27,44 +30,18 @@ export const PERMISOS = [
   'danio:reportar',
   'danio:gestionar',
   'usuario:gestionar',
+  'regla:gestionar',
 ] as const;
 export type Permiso = (typeof PERMISOS)[number];
 
-/** Matriz rol → permisos. Validar con la patrocinadora (semana 3). */
-export const MATRIZ_PERMISOS: Record<Rol, readonly Permiso[]> = {
-  ESTUDIANTE: ['reserva:solicitar'],
-  DOCENTE: ['reserva:solicitar'],
-  DIRECTOR_CARRERA: ['reserva:solicitar', 'reserva:aprobar', 'dashboard:ver', 'reporte:generar'],
-  DIRECCION_ACADEMICA: [
-    'reserva:solicitar',
-    'reserva:aprobar',
-    'planificacion:importar',
-    'dashboard:ver',
-    'reporte:generar',
-  ],
-  SUBDIRECCION: [
-    'reserva:solicitar',
-    'reserva:aprobar',
-    'reserva:cancelar_cualquiera',
-    'dashboard:ver',
-    'reporte:generar',
-    'recurso:gestionar',
-  ],
-  DATD: ['dashboard:ver', 'reporte:generar', 'usuario:gestionar'],
-  OPERACIONES: [
-    'recurso:gestionar',
-    'planificacion:importar',
-    'mantencion:planificar',
-    'danio:gestionar',
-    'dashboard:ver',
-  ],
-  ASEO_MANTENCION: ['inventario:registrar', 'danio:reportar'],
-  ADMIN_TI: ['usuario:gestionar', 'recurso:gestionar', 'planificacion:importar'],
-};
-
-export function tienePermiso(rol: Rol, permiso: Permiso): boolean {
-  return MATRIZ_PERMISOS[rol].includes(permiso);
+/** Rol asignado con su ámbito (D2): sin sede ni carrera = toda la institución. */
+export interface RolAsignado {
+  codigo: Rol;
+  sedeId: string | null;
+  carreraId: string | null;
 }
 
-/** Roles cuyas solicitudes quedan aprobadas automáticamente (no requieren aprobador). */
-export const ROLES_AUTOAPROBADOS: readonly Rol[] = ['SUBDIRECCION', 'DIRECCION_ACADEMICA'];
+/** Los permisos efectivos llegan en la sesión (unión de los permisos de los roles vigentes). */
+export function tienePermiso(permisos: readonly string[], permiso: Permiso): boolean {
+  return permisos.includes(permiso);
+}

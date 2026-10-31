@@ -1,7 +1,7 @@
 // Aplica las migraciones pendientes de packages/db/migraciones, en orden y cada una en su transacción.
 // Guarda un checksum por archivo: si alguien edita una migración ya aplicada, se detiene con error
 // (las migraciones aplicadas no se editan; se crea una nueva).
-// Uso: DATABASE_URL=... node scripts/migrar.mjs [--semillas]
+// Uso: DATABASE_URL=... node scripts/migrar.mjs [--semillas | --demo]
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -9,7 +9,16 @@ import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
-const url = process.env.DATABASE_URL;
+// Usa DATABASE_URL; si no está definida, la toma de apps/api/.env (misma base que la API)
+function urlDesdeEnvDeLaApi() {
+  try {
+    const env = readFileSync(join(raiz, '..', '..', 'apps', 'api', '.env'), 'utf8');
+    return /^DATABASE_URL\s*=\s*"?([^"\n]+)"?/m.exec(env)?.[1];
+  } catch {
+    return undefined;
+  }
+}
+const url = process.env.DATABASE_URL ?? urlDesdeEnvDeLaApi();
 if (!url) {
   console.error('Falta DATABASE_URL');
   process.exit(1);
@@ -56,13 +65,16 @@ try {
   }
   console.log(nuevas ? `${nuevas} migración(es) aplicada(s)` : 'Base de datos al día');
 
-  if (process.argv.includes('--semillas')) {
-    const dirSem = join(raiz, 'semillas');
+  const cargar = async (sub) => {
+    const dirSem = join(raiz, sub);
     for (const archivo of readdirSync(dirSem).filter((f) => f.endsWith('.sql')).sort()) {
       await cliente.query(readFileSync(join(dirSem, archivo), 'utf8'));
-      console.log(`✔ semilla ${archivo}`);
+      console.log(`✔ ${sub}/${archivo}`);
     }
-  }
+  };
+  if (process.argv.includes('--semillas') || process.argv.includes('--demo')) await cargar('semillas');
+  // Datos de demostración: solo desarrollo y pruebas, nunca producción
+  if (process.argv.includes('--demo')) await cargar('semillas/demo');
 } catch (e) {
   console.error(`✘ ${e.message}`);
   process.exitCode = 1;

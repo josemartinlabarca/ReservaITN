@@ -19,5 +19,9 @@ aprobación, check-in, auditoría) y vistas.
 - (+) Las reglas críticas (R1, R7, estados) las garantiza la base, sin importar qué cliente escriba.
 - (+) El esquema se revisa en los PR como SQL legible, y las pruebas demuestran cada restricción.
 - (−) El equipo debe saber SQL de PostgreSQL. Se compensa con las pruebas y los comentarios.
-- (−) **Transición:** la API actual (`apps/api`) usa todavía el modelo v0 de `apps/api/prisma`.
-  Migrar la API al modelo v1 es el siguiente paso (ver roadmap).
+- (−) Tras cada migración nueva hay que regenerar el cliente: `pnpm --filter @reservaitn/api prisma:pull`.
+
+## Actualización (31/10/2026)
+La API ya usa el modelo v1. Las reglas de aprobación (D11) también viven en la base como funciones
+(`reservas.regla_aplicable`, `reservas.puede_aprobar`, `reservas.aprobadores_de`, migración V010), con
+pruebas en `packages/db`; la API las llama en lugar de repetir la lógica.

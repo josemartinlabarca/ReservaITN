@@ -1,11 +1,11 @@
 'use client';
-import type { Rol } from '@reservaitn/shared';
+import type { RolAsignado } from '@reservaitn/shared';
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 export interface Sesion {
   token: string;
-  usuario: { id: string; nombre: string; rol: Rol; carreraId: string | null };
+  usuario: { id: string; nombre: string; roles: RolAsignado[]; permisos: string[] };
 }
 
 export function sesion(): Sesion | null {

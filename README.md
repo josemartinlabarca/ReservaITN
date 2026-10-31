@@ -63,8 +63,10 @@ cp apps/api/.env.example apps/api/.env && cp apps/web/.env.example apps/web/.env
 ```
 
 ```bash
-pnpm db:migrate && pnpm db:seed
+pnpm db:seed
 ```
+
+`db:seed` aplica las migraciones de `packages/db` y carga catálogos y datos de demostración.
 
 ```bash
 pnpm dev
@@ -75,8 +77,16 @@ pnpm dev
 - Móvil: `pnpm --filter @reservaitn/mobile dev` y escanear el QR con Expo Go
 - Correos de prueba: http://localhost:8025
 
-Usuarios demo (contraseña `reservaitn`): `subdireccion@`, `datd@`, `academica@`, `dir.inf@`,
-`docente@`, `estudiante@`, `operaciones@`, `aseo@` + `itn.cl`.
+Usuarios demo (contraseña `reservaitn`), todos `@itn.cl`:
+
+| Usuario | Roles | Para probar |
+|---|---|---|
+| `subdireccion` | Subdirección | Control total: se autoaprueba, aprueba y cancela cualquier reserva |
+| `dir.inf` | Director de Informática + Docente | Aprueba lo de Informática (y el LAB-INF1); también pide salas |
+| `dir.enf` | Directora de Enfermería | No ve las solicitudes de Informática |
+| `docente` | Docente de Informática | Sus solicitudes de sala van al director de Informática |
+| `estudiante` | Estudiante matriculada en Informática | Reserva salas de estudio con autorización |
+| `academica`, `datd`, `operaciones`, `aseo` | Un rol cada uno | Dashboard, importación, mantención, reporte de daños |
 
 ## Comandos
 
@@ -85,7 +95,9 @@ Usuarios demo (contraseña `reservaitn`): `subdireccion@`, `datd@`, `academica@`
 | `pnpm dev` | Levanta API, web y compila `shared` en modo watch |
 | `pnpm build` | Compila todo |
 | `pnpm test` | Pruebas unitarias (reglas, validaciones) |
-| `pnpm --filter @reservaitn/api test:db` | Pruebas de integración contra PostgreSQL (anti-choques con 200 casos) |
+| `pnpm --filter @reservaitn/db test:db` | 40 pruebas de restricciones del modelo de datos |
+| `pnpm --filter @reservaitn/api test:db` | Pruebas de integración de la API (flujo de reservas, series, importación, concurrencia) |
+| `pnpm --filter @reservaitn/api prisma:pull` | Regenera `schema.prisma` desde la base tras una migración nueva (ADR 0004) |
 | `pnpm typecheck` | Verificación de tipos en todo el monorepo |
 
 ## Documentación

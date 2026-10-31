@@ -13,6 +13,7 @@ import type { UsuarioSesion } from '../comun/auth.guard';
 
 export interface ErrorFila {
   fila: number;
+  columna: string | null; // null = la fila completa (ej. choque)
   mensaje: string;
 }
 
@@ -45,7 +46,7 @@ export class ImportacionService {
       const datos: Record<string, unknown> = {};
       columnas.forEach((campo, col) => {
         const v = row.getCell(col).value;
-        datos[campo] = v instanceof Date ? hhmm(v) : typeof v === 'string' ? v.trim() || undefined : v ?? undefined;
+        datos[campo] = v instanceof Date ? hhmm(v) : typeof v === 'string' ? v.trim() || undefined : (v ?? undefined);
       });
       filas.push({ numero, datos });
     });
@@ -53,69 +54,113 @@ export class ImportacionService {
   }
 
   /**
-   * Importa la planificación semestral (R9 / E5). Cada fila válida genera una reserva APROBADA
-   * de origen PLANIFICACION por semana. Una fila con choque o error se informa y no detiene el resto.
+   * Importa la planificación semestral (R9 / E5). Cada fila válida crea una solicitud de origen
+   * PLANIFICACION con su patrón semanal y una reserva por semana del período (sin días no hábiles),
+   * aprobada automáticamente. Cada fila va en su propia transacción: si una fecha choca, la base
+   * rechaza la fila completa (todas sus semanas o ninguna) y se informa sin detener el resto.
    */
-  async importar(archivo: { originalname: string; buffer: Buffer }, desde: Date, hasta: Date, u: UsuarioSesion) {
+  async importar(archivo: { originalname: string; buffer: Buffer }, periodoCodigo: string, u: UsuarioSesion) {
+    const periodo = await this.prisma.periodo_academico.findUnique({ where: { codigo: periodoCodigo } });
+    if (!periodo) throw new BadRequestException(`El período ${periodoCodigo} no existe`);
     const filas = await this.leerExcel(archivo.buffer);
-    const salas = await this.prisma.sala.findMany({ where: { activa: true }, select: { id: true, codigo: true } });
-    const salaPorCodigo = new Map<string, string[]>();
-    for (const s of salas) salaPorCodigo.set(s.codigo, [...(salaPorCodigo.get(s.codigo) ?? []), s.id]);
 
-    const importacion = await this.prisma.importacion.create({
-      data: { archivoNombre: archivo.originalname, usuarioId: u.id, totalFilas: filas.length, filasOk: 0 },
-    });
+    const [espacios, clase, noHabiles] = await Promise.all([
+      this.prisma.espacio.findMany({ where: { activo: true }, select: { id: true, codigo: true, capacidad: true } }),
+      this.prisma.tipo_actividad.findUniqueOrThrow({ where: { codigo: 'CLASE' } }),
+      this.prisma.dia_no_habil.findMany({ where: { fecha: { gte: periodo.fecha_inicio, lte: periodo.fecha_fin } } }),
+    ]);
+    const porCodigo = new Map<string, string[]>();
+    for (const e of espacios) porCodigo.set(e.codigo, [...(porCodigo.get(e.codigo) ?? []), e.id]);
+    // Los feriados de una sola sede se resuelven por sede en una versión siguiente; aquí se omiten los comunes
+    const feriados = new Set(noHabiles.filter((n) => !n.sede_id).map((n) => n.fecha.toISOString().slice(0, 10)));
+    const desde = new Date(`${periodo.fecha_inicio.toISOString().slice(0, 10)}T00:00:00`);
+    const hasta = new Date(`${periodo.fecha_fin.toISOString().slice(0, 10)}T23:59:59`);
+
+    const importacion = await this.prisma.conActor(u.id, (tx) =>
+      tx.importacion.create({
+        data: { archivo_nombre: archivo.originalname, periodo_id: periodo.id, usuario_id: u.id, total_filas: filas.length },
+      }),
+    );
 
     const errores: ErrorFila[] = [];
-    let filasOk = 0;
     let reservasCreadas = 0;
     for (const { numero, datos } of filas) {
       const v = filaPlanificacionSchema.safeParse(datos);
       if (!v.success) {
-        errores.push({ fila: numero, mensaje: v.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') });
+        for (const i of v.error.issues) errores.push({ fila: numero, columna: String(i.path[0] ?? ''), mensaje: i.message });
         continue;
       }
-      const ids = salaPorCodigo.get(v.data.codigoSala) ?? [];
+      const ids = porCodigo.get(v.data.codigoSala) ?? [];
       if (ids.length !== 1) {
-        errores.push({ fila: numero, mensaje: ids.length ? `Sala ${v.data.codigoSala} existe en más de una sede` : `Sala ${v.data.codigoSala} no existe` });
+        errores.push({
+          fila: numero,
+          columna: 'codigoSala',
+          mensaje: ids.length ? `El espacio ${v.data.codigoSala} existe en más de un edificio` : `El espacio ${v.data.codigoSala} no existe`,
+        });
         continue;
       }
-      const ocurrencias = expandirSemanal(v.data, desde, hasta);
+      const ocurrencias = expandirSemanal(v.data, desde, hasta).filter(
+        (o) => !feriados.has(o.inicio.toLocaleDateString('sv-SE', { timeZone: 'America/Santiago' })),
+      );
       try {
-        // Todas las semanas de la fila o ninguna: si una choca, la BD rechaza la fila completa.
-        await this.prisma.reserva.createMany({
-          data: ocurrencias.map((o) => ({
-            ...o,
-            salaId: ids[0],
-            solicitanteId: u.id,
-            aprobadorId: u.id,
-            decididaEn: new Date(),
-            estado: 'APROBADA' as const,
-            origen: 'PLANIFICACION' as const,
-            motivo: v.data.asignatura,
-            asistentes: Math.max(1, v.data.inscritos),
-            importacionId: importacion.id,
-          })),
+        await this.prisma.conActor(u.id, async (tx) => {
+          const [hi, mi] = v.data.horaInicio.split(':').map(Number);
+          const [hf, mf] = v.data.horaFin.split(':').map(Number);
+          const s = await tx.solicitud.create({
+            data: {
+              solicitante_usuario_id: u.id,
+              tipo_actividad_id: clase.id,
+              origen: 'PLANIFICACION',
+              importacion_id: importacion.id,
+              descripcion: v.data.asignatura,
+              asistentes: Math.max(1, v.data.inscritos),
+              fecha_desde: periodo.fecha_inicio,
+              fecha_hasta: periodo.fecha_fin,
+              patron_recurrencia: {
+                create: {
+                  dia_semana: v.data.diaSemana,
+                  hora_inicio: new Date(Date.UTC(1970, 0, 1, hi, mi)),
+                  hora_fin: new Date(Date.UTC(1970, 0, 1, hf, mf)),
+                },
+              },
+              reserva: {
+                create: ocurrencias.map((o) => ({
+                  espacio_id: ids[0],
+                  inicio: o.inicio,
+                  fin: o.fin,
+                  estado: 'PENDIENTE' as const,
+                  expira_en: new Date(Date.now() + 3_600_000),
+                })),
+              },
+            },
+          });
+          // Aprobación automática registrada (N4); el trigger aprueba todas las semanas
+          await tx.aprobacion.create({ data: { solicitud_id: s.id, decision: 'APROBADA' } });
         });
-        filasOk++;
         reservasCreadas += ocurrencias.length;
       } catch (e) {
         if (!esChoqueBD(e)) throw e;
-        errores.push({ fila: numero, mensaje: `Choque de horario en ${v.data.codigoSala} con otra reserva aprobada` });
+        errores.push({ fila: numero, columna: null, mensaje: `Choque de horario en ${v.data.codigoSala} con otra reserva` });
       }
     }
 
-    await this.prisma.importacion.update({
-      where: { id: importacion.id },
-      data: { filasOk, errores: errores as unknown as object },
-    });
+    if (errores.length) {
+      await this.prisma.conActor(u.id, (tx) =>
+        tx.importacion_error.createMany({
+          data: errores.map((e) => ({ importacion_id: importacion.id, fila: e.fila, columna: e.columna, mensaje: e.mensaje })),
+          skipDuplicates: true,
+        }),
+      );
+    }
+    // N1: las filas correctas se calculan en la vista, no se guardan
+    const [resumen] = await this.prisma.$queryRaw<{ filas_ok: number; proporcion_ok: string }[]>`
+      SELECT filas_ok, proporcion_ok FROM reservas.v_importacion_resumen WHERE id = ${importacion.id}::uuid`;
     return {
       importacionId: importacion.id,
       totalFilas: filas.length,
-      filasOk,
+      filasOk: resumen.filas_ok,
       reservasCreadas,
-      // Criterio de aceptación E5: ≥ 98 %
-      porcentajeOk: filas.length ? filasOk / filas.length : 0,
+      porcentajeOk: Number(resumen.proporcion_ok), // criterio de aceptación E5: ≥ 0,98
       errores,
     };
   }

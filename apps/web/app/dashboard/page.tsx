@@ -3,16 +3,16 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Encabezado } from '../Encabezado';
 import { api } from '@/lib/api';
 
-interface FilaSala { salaId: string; codigo: string; sede: string; tipo: string; horasReservadas: number; indice: number }
+interface FilaSala { espacioId: string; codigo: string; nombre: string; sede: string; tipo: string; horasReservadas: number; indice: number }
 interface Ocupacion {
   indiceGlobal: number;
   totalReservas: number;
-  porSala: FilaSala[];
+  porEspacio: FilaSala[];
 }
 interface Bloque { dia: string; jornada: 'MANANA' | 'TARDE' | 'VESPERTINA'; horas: number }
 interface Proyeccion { mayorUso: Bloque[]; menorUso: Bloque[] }
 interface Indicadores { pendientes: number; B6_tiempoPromedioAprobacionHoras: number | null; B3_reservasNoUsadas: number }
-interface OcupSala { id: string; inicio: string; fin: string; motivo: string; origen: string }
+interface OcupSala { id: string; inicio: string; fin: string; estado: string; solicitud: { descripcion: string; origen: string } }
 
 const JORNADA = { MANANA: 'mañana', TARDE: 'tarde', VESPERTINA: 'vespertina' } as const;
 const pct = (n: number) => `${(n * 100).toFixed(1)} %`;
@@ -40,7 +40,7 @@ export default function Dashboard() {
   }, [rango]);
 
   async function verSala(sala: FilaSala) {
-    const reservas = await api<OcupSala[]>(`/reservas/ocupacion?desde=${rango.desde}&hasta=${rango.hasta}&salaId=${sala.salaId}`);
+    const reservas = await api<OcupSala[]>(`/reservas/ocupacion?desde=${rango.desde}&hasta=${rango.hasta}&espacioId=${sala.espacioId}`);
     setDetalle({ sala, reservas });
   }
 
@@ -75,8 +75,8 @@ export default function Dashboard() {
               <table>
                 <thead><tr><th>Sala</th><th>Sede</th><th>Tipo</th><th>Horas</th><th>Ocupación</th><th></th></tr></thead>
                 <tbody>
-                  {datos.porSala.map((s) => (
-                    <tr key={s.salaId} className="click" onClick={() => verSala(s)}>
+                  {datos.porEspacio.map((s) => (
+                    <tr key={s.espacioId} className="click" onClick={() => verSala(s)}>
                       <td>{s.codigo}</td><td>{s.sede}</td><td>{s.tipo}</td><td>{s.horasReservadas}</td>
                       <td><div className="barra"><span style={{ width: `${(s.indice * 100).toFixed(1)}%` }} /></div></td>
                       <td>{pct(s.indice)}</td>
@@ -88,12 +88,12 @@ export default function Dashboard() {
 
             {detalle && (
               <section className="card">
-                <h2>Detalle {detalle.sala.codigo}</h2>
+                <h2>Detalle {detalle.sala.codigo} · {detalle.sala.nombre}</h2>
                 {detalle.reservas.length === 0 ? <p>Sin reservas en el período.</p> : (
                   <table>
-                    <thead><tr><th>Inicio</th><th>Fin</th><th>Motivo</th><th>Origen</th></tr></thead>
+                    <thead><tr><th>Inicio</th><th>Fin</th><th>Motivo</th><th>Origen</th><th>Estado</th></tr></thead>
                     <tbody>{detalle.reservas.map((r) => (
-                      <tr key={r.id}><td>{new Date(r.inicio).toLocaleString('es-CL')}</td><td>{new Date(r.fin).toLocaleTimeString('es-CL')}</td><td>{r.motivo}</td><td>{r.origen}</td></tr>
+                      <tr key={r.id}><td>{new Date(r.inicio).toLocaleString('es-CL')}</td><td>{new Date(r.fin).toLocaleTimeString('es-CL')}</td><td>{r.solicitud.descripcion}</td><td>{r.solicitud.origen}</td><td>{r.estado}</td></tr>
                     ))}</tbody>
                   </table>
                 )}

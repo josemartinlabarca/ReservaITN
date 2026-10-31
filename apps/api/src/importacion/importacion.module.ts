@@ -15,9 +15,7 @@ import { RequierePermiso, UsuarioActual, type UsuarioSesion } from '../comun/aut
 import { ZodPipe } from '../comun/zod.pipe';
 import { ImportacionService } from './importacion.service';
 
-const semestreSchema = z
-  .object({ desde: z.coerce.date(), hasta: z.coerce.date() })
-  .refine((s) => s.hasta > s.desde, { message: '"hasta" debe ser posterior a "desde"', path: ['hasta'] });
+const semestreSchema = z.object({ periodo: z.string().regex(/^[0-9]{4}-[1-3]$/, 'Período con formato 2027-1') });
 
 /** Importación de planificación semestral (R9 / E5 / WBS 1.4.3). */
 @Controller('importaciones')
@@ -27,7 +25,7 @@ class ImportacionController {
     private readonly prisma: PrismaService,
   ) {}
 
-  /** multipart/form-data: archivo (.xlsx), desde y hasta (inicio y fin del semestre). */
+  /** multipart/form-data: archivo (.xlsx) y periodo (código, ej. 2027-1). */
   @RequierePermiso('planificacion:importar')
   @Post()
   @UseInterceptors(FileInterceptor('archivo', { limits: { fileSize: 10 * 1024 * 1024 } }))
@@ -37,17 +35,14 @@ class ImportacionController {
     @UsuarioActual() u: UsuarioSesion,
   ) {
     if (!archivo) throw new BadRequestException('Adjunte el archivo Excel en el campo "archivo"');
-    return this.svc.importar(archivo, s.desde, s.hasta, u);
+    return this.svc.importar(archivo, s.periodo, u);
   }
 
   @RequierePermiso('planificacion:importar')
   @Get()
   historial() {
-    return this.prisma.importacion.findMany({
-      include: { usuario: { select: { nombre: true } } },
-      orderBy: { creadaEn: 'desc' },
-      take: 20,
-    });
+    return this.prisma.$queryRaw`
+      SELECT * FROM reservas.v_importacion_resumen ORDER BY creado_en DESC LIMIT 20`;
   }
 }
 

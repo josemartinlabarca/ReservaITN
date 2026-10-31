@@ -14,8 +14,8 @@
     "typecheck": "turbo run typecheck",
     "db:up": "docker compose -f infra/docker-compose.yml up -d",
     "db:down": "docker compose -f infra/docker-compose.yml down",
-    "db:migrate": "pnpm --filter @reservaitn/api prisma:migrate",
-    "db:seed": "pnpm --filter @reservaitn/api prisma:seed",
+    "db:migrate": "pnpm --filter @reservaitn/db migrar",
+    "db:seed": "pnpm --filter @reservaitn/db demo",
     "format": "prettier --write ."
   },
   "devDependencies": {
