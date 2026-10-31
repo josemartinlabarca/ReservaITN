@@ -60,6 +60,12 @@ flowchart LR
 | POST/GET | `/api/mantencion/danios` | `danio:reportar` / `danio:gestionar` | R17 |
 | POST/PATCH | `/api/mantencion/ordenes` (con bloqueo opcional de la sala) | `danio:gestionar` | R15, D16 |
 
+**Envío de correos** (`notificaciones/envios.service.ts`, cada 15 s): toma de la cola `comunicacion.envio`
+los correos pendientes con `FOR UPDATE SKIP LOCKED` (varias instancias no envían dos veces), los envía
+fuera de la transacción y reintenta con espera creciente (1, 2, 4, 8… min) hasta `correo.intentos_maximos`;
+luego los marca `FALLIDO` con el error. Correo HTML institucional + texto plano (`plantilla-correo.ts`);
+`comunicacion.plantilla` puede reemplazar asunto y cuerpo por evento.
+
 **Tareas programadas** (`tareas/`, cada minuto, con candado de PostgreSQL para que corra en una sola
 instancia): vencer las solicitudes pendientes (D12) y liberar las reservas sin check-in (R18).
 

@@ -10,7 +10,7 @@ Actualizar en cada PR que avance un requisito.
 | R3 | Disponibilidad visible | Debe | E11 | `GET /reservas/ocupacion`, web `reservar/` (ocupación del día), móvil `Disponibilidad` | — | 🟡 falta vista calendario |
 | R4 | Aprobación por rol | Debe | E6 | `regla_aprobacion` + `reservas.puede_aprobar` (V010), web `aprobaciones` | `aprobacion_reglas.test.ts`, `flujo-reservas.db.test.ts` | ✅ |
 | R5 | Cancelación por Subdirección + aviso | Debe | E6 | `reservas.cancelacion` (V011, motivo obligatorio para reservas ajenas), botón Cancelar en el dashboard | `reservas.test.ts` (V011), `flujo-reservas.db.test.ts` | ✅ |
-| R6 | Notificaciones | Debe | E8 | `comunicacion.notificacion` + cola `envio` (outbox) con preferencias | `flujo-reservas.db.test.ts` | 🟡 falta el proceso que envía correo/push |
+| R6 | Notificaciones | Debe | E8 | Bandeja en la app + cola `envio` (outbox) con preferencias + despachador de correo con reintentos (V012) | `flujo-reservas.db.test.ts`, `correos.db.test.ts` (servidor SMTP de prueba) | ✅ correo · 🟡 push (requiere registrar dispositivos en la app) |
 | R7 | Trazabilidad | Debe | E9 | `v_reserva_trazabilidad` + `auditoria.evento` con actor (`conActor`) | `flujo-reservas.db.test.ts`, `operacion.test.ts` | ✅ |
 | R8 | Laboratorios exclusivos y préstamo | Debe | E5/E6 | `espacio_carrera` + regla `CARRERA_ESPACIO` | `aprobacion_reglas.test.ts` | ✅ |
 | R9 | Importar planificación | Debe | E5 | `api/importacion` (solicitud + patrón + reservas aprobadas), `v_importacion_resumen` | `importacion.db.test.ts` | 🟡 ajustar al Excel real |

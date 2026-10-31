@@ -25,8 +25,13 @@ const horaChile = (d: Date) => {
 /** Día ISO 8601 (1 = lunes) en Chile. */
 const diaSemanaChile = (d: Date) => ((new Date(`${diaChile(d)}T12:00:00Z`).getUTCDay() + 6) % 7) + 1;
 
-const fmt = (d: Date) =>
-  d.toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'short', timeStyle: 'short' });
+/** "martes 10 de noviembre, de 08:55 a 10:10" (hora de Chile), para los avisos. */
+const cuando = (inicio: Date, fin: Date) => {
+  const zona = { timeZone: 'America/Santiago' } as const;
+  const dia = inicio.toLocaleDateString('es-CL', { ...zona, weekday: 'long', day: 'numeric', month: 'long' });
+  const hora = (d: Date) => d.toLocaleTimeString('es-CL', { ...zona, hour: '2-digit', minute: '2-digit', hour12: false });
+  return `${dia}, de ${hora(inicio)} a ${hora(fin)}`;
+};
 
 /**
  * Reservas, aprobaciones, cancelación y anti-choques (E6 / WBS 1.4.4).
@@ -114,7 +119,7 @@ export class ReservasService {
           aprobadores.map((a) => a.id),
           'SOLICITUD_CREADA',
           'Nueva solicitud de reserva',
-          `${u.nombre} solicita ${espacio.codigo} el ${fmt(dto.inicio)}${serie ? ` (${fechas.length} fechas)` : ''}: ${dto.descripcion}`,
+          `${u.nombre} solicita ${espacio.codigo} (${espacio.nombre}) el ${cuando(dto.inicio, dto.fin)}${serie ? `, cada semana (${fechas.length} fechas)` : ''}.\nMotivo: ${dto.descripcion}`,
           { solicitudId: solicitud.id },
         );
       }
@@ -186,7 +191,7 @@ export class ReservasService {
           [r.solicitud.solicitante_usuario_id],
           'RESERVA_CANCELADA',
           'Su reserva fue cancelada',
-          `${r.espacio.codigo}, ${fmt(r.inicio)} — Motivo: ${motivo!.trim()} (${u.nombre})`,
+          `${r.espacio.codigo} (${r.espacio.nombre}), ${cuando(r.inicio, r.fin)}.\nMotivo: ${motivo!.trim()}\nCancelada por: ${u.nombre}`,
           { reservaId },
         );
       }

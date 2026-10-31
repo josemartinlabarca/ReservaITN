@@ -154,7 +154,9 @@ Contenido de `apps/api/.env` (sirve tal cual para desarrollo):
 | `JWT_SECRET` | `cambiar-en-produccion` | Firma de las sesiones. En producción, un valor largo y aleatorio |
 | `PORT` | `3001` | Puerto de la API |
 | `CORS_ORIGIN` | `http://localhost:3000` | Desde dónde puede llamarla la web |
-| `SMTP_URL` | `smtp://localhost:1025` | Mailpit (para el envío de correos, cuando se implemente) |
+| `SMTP_URL` | `smtp://localhost:1025` | Servidor de correo. En desarrollo, Mailpit (los correos se ven en http://localhost:8025) |
+| `SMTP_FROM` | `ReservaITN <no-responder@itn.cl>` | Remitente de los avisos |
+| `WEB_URL` | `http://localhost:3000` | Dirección de la web, para el botón de los correos |
 | `TZ` | `America/Santiago` | Las reglas de horario se evalúan en hora de Chile |
 
 Los archivos `.env` **nunca** se suben a GitHub (están en `.gitignore`).
@@ -368,4 +370,4 @@ pnpm db:seed
 | La API falla con `Unknown field` o `Invalid prisma.… invocation` | Cliente de Prisma desactualizado tras una migración nueva | `pnpm --filter @reservaitn/api prisma:pull` |
 | La app móvil dice *Error de conexión* | Usa `localhost` o el firewall bloquea el puerto | Revisar `apps/mobile/.env` (paso 9) y el firewall |
 | Expo Go dice que el proyecto es incompatible | SDK de Expo distinto al de Expo Go | Ver la nota del paso 9 |
-| Los correos no llegan a Mailpit | El proceso que envía los correos aún no está implementado; quedan en la cola `comunicacion.envio` | Es esperado por ahora (ver roadmap, 1.4.6) |
+| Los correos no llegan a Mailpit (http://localhost:8025) | Mailpit no está corriendo, falta `SMTP_URL` en `apps/api/.env`, o el despachador aún no hace su vuelta (cada 15 s) | `docker ps` debe mostrar `reservaitn-mail-1`; revisa `SMTP_URL`. El estado de cada correo está en `comunicacion.envio` (`PENDIENTE`, `ENVIADO`, `FALLIDO` con `ultimo_error`) |

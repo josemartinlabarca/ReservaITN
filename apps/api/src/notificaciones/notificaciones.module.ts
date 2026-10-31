@@ -1,6 +1,7 @@
 import { Controller, Get, Global, Injectable, Module, Param, ParseUUIDPipe, Patch } from '@nestjs/common';
 import { PrismaService, type Tx } from '../comun/prisma.service';
 import { UsuarioActual, type UsuarioSesion } from '../comun/auth.guard';
+import { EnviosService } from './envios.service';
 
 export interface Referencia {
   solicitudId?: string;
@@ -72,8 +73,8 @@ class NotificacionesController {
 
 @Global()
 @Module({
-  providers: [NotificacionesService],
+  providers: [NotificacionesService, EnviosService],
   controllers: [NotificacionesController],
-  exports: [NotificacionesService],
+  exports: [NotificacionesService, EnviosService],
 })
 export class NotificacionesModule {}

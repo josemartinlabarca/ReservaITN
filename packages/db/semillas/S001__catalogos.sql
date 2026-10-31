@@ -14,7 +14,8 @@ INSERT INTO institucion.parametro (clave, valor, tipo, descripcion) VALUES
   ('reserva.dias_anticipacion_maxima',       '120', 'ENTERO', 'Máximo de días de anticipación para reservar'),
   ('reserva.minutos_duracion_minima',         '30', 'ENTERO', 'Duración mínima de una reserva'),
   ('sugerencia.minutos_ventana_liberacion',   '30', 'ENTERO', 'Salas que se liberan dentro de esta ventana se ofrecen como alternativa (R10)'),
-  ('aprobacion.horas_meta',                   '24', 'ENTERO', 'Meta de tiempo de aprobación (indicador B6)')
+  ('aprobacion.horas_meta',                   '24', 'ENTERO', 'Meta de tiempo de aprobación (indicador B6)'),
+  ('correo.intentos_maximos',                  '8', 'ENTERO', 'Intentos de envío de un correo antes de marcarlo FALLIDO (esperas de 1, 2, 4… min)')
 ON CONFLICT (clave) DO NOTHING;
 
 INSERT INTO seguridad.tipo_documento (codigo, nombre, valida_digito) VALUES
