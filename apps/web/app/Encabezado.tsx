@@ -22,6 +22,7 @@ export function Encabezado() {
       <Link href="/calendario">Calendario</Link>
       {tienePermiso(permisos, 'dashboard:ver') && <Link href="/dashboard">Dashboard</Link>}
       {tienePermiso(permisos, 'reserva:aprobar') && <Link href="/aprobaciones">Aprobaciones</Link>}
+      {tienePermiso(permisos, 'danio:gestionar') && <Link href="/mantencion">Mantención</Link>}
       {(tienePermiso(permisos, 'recurso:gestionar') || tienePermiso(permisos, 'usuario:gestionar')) && <Link href="/admin">Administración</Link>}
       <span>{s.usuario.nombre} · {roles.map((r) => r.codigo).join(', ')}</span>
       <button className="sec" onClick={() => { guardarSesion(null); router.replace('/login'); }}>Salir</button>

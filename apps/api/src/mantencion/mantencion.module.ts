@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Module, NotFoundException, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Get, Module, NotFoundException, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { z } from 'zod';
 import { inspeccionSchema, reporteDanioSchema } from '@reservaitn/shared';
 import { PrismaService } from '../comun/prisma.service';
@@ -20,6 +20,16 @@ const estadoOrdenSchema = z.object({
   asignadaA: z.string().uuid().optional(),
   solucion: z.string().trim().max(1000).optional(),
 });
+
+/** Transiciones permitidas de una orden de trabajo. RESUELTA y CANCELADA son finales. */
+const TRANSICIONES_ORDEN: Record<string, string[]> = {
+  ABIERTA: ['ASIGNADA', 'CANCELADA'],
+  ASIGNADA: ['ASIGNADA', 'EN_PROCESO', 'RESUELTA', 'CANCELADA'],
+  EN_PROCESO: ['ASIGNADA', 'RESUELTA', 'CANCELADA'],
+  RESUELTA: [],
+  CANCELADA: [],
+};
+const nombre = (p: { nombres: string; apellido_paterno: string }) => `${p.nombres} ${p.apellido_paterno}`;
 
 /** Mantención: inspecciones, daños y órdenes de trabajo (R15, R17 / E12 / WBS 1.4.10). */
 @Controller('mantencion')
@@ -88,9 +98,42 @@ class MantencionController {
   danios(@Query('sinOrden') sinOrden?: string) {
     return this.prisma.reporte_danio.findMany({
       where: sinOrden === 'true' ? { orden_trabajo_id: null } : {},
-      include: { espacio: { select: { codigo: true } }, orden_trabajo: { select: { id: true, estado: true } } },
+      include: {
+        espacio: { select: { id: true, codigo: true, nombre: true } },
+        item: { select: { nombre: true } },
+        usuario: { select: { persona: { select: { nombres: true, apellido_paterno: true } } } },
+        orden_trabajo: { select: { id: true, estado: true } },
+      },
       orderBy: { creado_en: 'desc' },
-      take: 100,
+      take: 200,
+    });
+  }
+
+  /** Personal al que se le puede asignar una orden (aseo y mantención, operaciones). */
+  @RequierePermiso('danio:gestionar')
+  @Get('personal')
+  async personal() {
+    const us = await this.prisma.usuario.findMany({
+      where: { estado: 'ACTIVO', usuario_rol: { some: { rol: { codigo: { in: ['ASEO_MANTENCION', 'OPERACIONES'] } } } } },
+      select: { id: true, persona: { select: { nombres: true, apellido_paterno: true } }, usuario_rol: { select: { rol: { select: { codigo: true } } } } },
+    });
+    return us.map((u) => ({ id: u.id, nombre: nombre(u.persona), roles: u.usuario_rol.map((r) => r.rol.codigo) }));
+  }
+
+  /** Órdenes de trabajo con su espacio, responsable, reportes y bloqueo de la sala. */
+  @RequierePermiso('danio:gestionar')
+  @Get('ordenes')
+  ordenes(@Query('abiertas') abiertas?: string) {
+    return this.prisma.orden_trabajo.findMany({
+      where: abiertas === 'true' ? { estado: { in: ['ABIERTA', 'ASIGNADA', 'EN_PROCESO'] } } : {},
+      include: {
+        espacio: { select: { id: true, codigo: true, nombre: true } },
+        usuario: { select: { persona: { select: { nombres: true, apellido_paterno: true } } } },
+        reporte_danio: { select: { id: true, descripcion: true, severidad: true, creado_en: true } },
+        solicitud: { select: { reserva: { select: { inicio: true, fin: true, estado: true }, orderBy: { inicio: 'asc' } } } },
+      },
+      orderBy: [{ creado_en: 'desc' }],
+      take: 200,
     });
   }
 
@@ -138,14 +181,23 @@ class MantencionController {
     });
   }
 
+  /**
+   * Cambia el estado de una orden (asignar, en proceso, resolver, cancelar). Al cerrarla, si tenía
+   * la sala bloqueada, el bloqueo que queda por delante se cancela y la sala se libera de inmediato.
+   */
   @RequierePermiso('danio:gestionar')
   @Patch('ordenes/:id')
   actualizarOrden(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodPipe(estadoOrdenSchema)) b: z.infer<typeof estadoOrdenSchema>, @UsuarioActual() u: UsuarioSesion) {
     return this.prisma.conActor(u.id, async (tx) => {
-      const orden = await tx.orden_trabajo.findUnique({ where: { id } });
+      const orden = await tx.orden_trabajo.findUnique({ where: { id }, include: { espacio: { select: { codigo: true } } } });
       if (!orden) throw new NotFoundException('Orden no encontrada');
-      // Las restricciones de la tabla exigen responsable, fecha y solución según el estado
-      return tx.orden_trabajo.update({
+      if (!TRANSICIONES_ORDEN[orden.estado].includes(b.estado))
+        throw new ConflictException(`Una orden ${orden.estado.toLowerCase()} no puede pasar a ${b.estado.toLowerCase()}`);
+      if (b.estado === 'ASIGNADA' && !b.asignadaA) throw new BadRequestException('Indique a quién se asigna');
+      if (b.estado === 'RESUELTA' && !(b.solucion ?? '').trim()) throw new BadRequestException('Describa la solución aplicada');
+
+      // Las restricciones de la tabla también exigen responsable, fecha y solución según el estado
+      const actualizada = await tx.orden_trabajo.update({
         where: { id },
         data: {
           estado: b.estado,
@@ -154,9 +206,35 @@ class MantencionController {
           resuelta_en: b.estado === 'RESUELTA' ? new Date() : null,
         },
       });
+
+      if ((b.estado === 'RESUELTA' || b.estado === 'CANCELADA') && orden.solicitud_bloqueo_id) {
+        const pendientes = await tx.reserva.findMany({
+          where: { solicitud_id: orden.solicitud_bloqueo_id, estado: 'APROBADA', fin: { gt: new Date() } },
+          select: { id: true },
+        });
+        for (const r of pendientes) {
+          await tx.reserva.update({ where: { id: r.id }, data: { estado: 'CANCELADA' } });
+          await tx.cancelacion.create({
+            data: { reserva_id: r.id, usuario_id: u.id, motivo: `Orden de trabajo ${b.estado === 'RESUELTA' ? 'resuelta' : 'cancelada'}: la sala queda disponible` },
+          });
+        }
+      }
+      if (b.estado === 'ASIGNADA' && b.asignadaA && b.asignadaA !== orden.asignada_a_usuario_id) {
+        await this.notif.notificar(
+          tx,
+          [b.asignadaA],
+          'ORDEN_ASIGNADA',
+          `Se le asignó una orden de trabajo en ${orden.espacio.codigo}`,
+          `Prioridad ${orden.prioridad.toLowerCase()} · ${orden.tipo === 'CORRECTIVA' ? 'reparación' : 'mantención preventiva'}`,
+          { ordenTrabajoId: id },
+        );
+      }
+      return actualizada;
     });
   }
 }
+
+export { MantencionController };
 
 @Module({ controllers: [MantencionController] })
 export class MantencionModule {}

@@ -7,7 +7,7 @@ Actualizar en cada PR que avance un requisito.
 |---|---|---|---|---|---|---|
 | R1 | Impedir reservas dobles | Debe | E6 | `reserva_sin_choque` (EXCLUDE, incluye pendientes), V006 | `packages/db/pruebas/reservas.test.ts` (200 casos), `flujo-reservas.db.test.ts` (20 simultáneas) | ✅ |
 | R2 | Centralizar solicitudes | Debe | E6 | `reservas.solicitud` + `POST /reservas`, web `reservar/` (precisión al minuto), app móvil | `flujo-reservas.db.test.ts` | ✅ |
-| R3 | Disponibilidad visible | Debe | E11 | `GET /reservas/ocupacion`, web `reservar/` (ocupación del día), móvil `Disponibilidad` | — | 🟡 falta vista calendario |
+| R3 | Disponibilidad visible | Debe | E11 | `GET /reservas/ocupacion`, web `calendario/` (semana por espacio, al minuto) y `reservar/`, móvil `Disponibilidad` | — | ✅ |
 | R4 | Aprobación por rol | Debe | E6 | `regla_aprobacion` + `reservas.puede_aprobar` (V010), web `aprobaciones` | `aprobacion_reglas.test.ts`, `flujo-reservas.db.test.ts` | ✅ |
 | R5 | Cancelación por Subdirección + aviso | Debe | E6 | `reservas.cancelacion` (V011, motivo obligatorio para reservas ajenas), botón Cancelar en el dashboard | `reservas.test.ts` (V011), `flujo-reservas.db.test.ts` | ✅ |
 | R6 | Notificaciones | Debe | E8 | Bandeja en la app + cola `envio` (outbox) con preferencias + despachador de correo con reintentos (V012) | `flujo-reservas.db.test.ts`, `correos.db.test.ts` (servidor SMTP de prueba) | ✅ correo · 🟡 push (requiere registrar dispositivos en la app) |
@@ -19,8 +19,8 @@ Actualizar en cada PR que avance un requisito.
 | R12 | Dashboard de ocupación con detalle | Debe | E9 | `dashboard.module.ts`, web `dashboard` | `dashboard.test.ts` | 🟡 |
 | R13 | Reportes desde–hasta | Debe | E9 | `rangoFechasSchema`, dashboard por días completos, `GET /dashboard/reporte.xlsx` (Excel de 4 hojas) | `reporte.db.test.ts` | ✅ |
 | R14 | Proyección de uso | Debería | E10 | `rankingJornadas`, `api/proyeccion`, web dashboard | `planificacion.test.ts` | 🟡 |
-| R15 | Mantención sin interferir clases | Debería | E12 | orden de trabajo con bloqueo (`origen MANTENCION`, respeta el anti-choques) | — | 🟡 falta interfaz |
+| R15 | Mantención sin interferir clases | Debería | E12 | Orden de trabajo con bloqueo (`origen MANTENCION`, respeta el anti-choques; se libera al cerrar), web `mantencion/` | `mantencion.db.test.ts` | ✅ |
 | R16 | App móvil + web | Debe | E11 | `apps/mobile`, `apps/web` | — | 🟡 |
-| R17 | Inventario y daños desde el celular | Debería | E12 | `mantencion/` (inspecciones con diferencias, daños, órdenes), móvil `ReporteDanio` | `operacion.test.ts` | 🟡 falta inventario en la app |
+| R17 | Inventario y daños desde el celular | Debería | E12 | `mantencion/` (daños → órdenes, inspecciones), móvil `ReporteDanio`, web `mantencion/` | `operacion.test.ts`, `mantencion.db.test.ts` | 🟡 falta conteo de inventario en la app |
 | R18 | Liberar reservas no usadas | Debería | E8 | check-in por QR + `reservas.liberar_sin_check_in()` + tarea cada minuto | `aprobacion_reglas.test.ts` | ✅ API · 🟡 lector QR en la app |
 | R19 | Datos de cada reserva | Debe | E2 | `schema.prisma` + `reservaCreateSchema` | `validaciones.test.ts` | 🟡 validar campos |

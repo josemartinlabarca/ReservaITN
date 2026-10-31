@@ -61,7 +61,8 @@ flowchart LR
 | GET/PATCH | `/api/notificaciones/mias`, `/:id/leida` | sesión | R6 |
 | POST | `/api/mantencion/inspecciones` | `inventario:registrar` | R17, D17 |
 | POST/GET | `/api/mantencion/danios` | `danio:reportar` / `danio:gestionar` | R17 |
-| POST/PATCH | `/api/mantencion/ordenes` (con bloqueo opcional de la sala) | `danio:gestionar` | R15, D16 |
+| GET/POST/PATCH | `/api/mantencion/ordenes` (bloqueo opcional de la sala; al cerrar la orden, el bloqueo restante se libera) | `danio:gestionar` | R15, D16 |
+| GET | `/api/mantencion/personal` | `danio:gestionar` | Personal asignable (aseo, operaciones) |
 
 **Envío de correos** (`notificaciones/envios.service.ts`, cada 15 s): toma de la cola `comunicacion.envio`
 los correos pendientes con `FOR UPDATE SKIP LOCKED` (varias instancias no envían dos veces), los envía
