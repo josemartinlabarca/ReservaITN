@@ -15,7 +15,8 @@ export default function Login() {
         body: JSON.stringify({ email: f.get('email'), password: f.get('password') }),
       });
       guardarSesion(s);
-      router.replace('/dashboard');
+      // Quien no ve el dashboard (docentes, estudiantes) entra directo a reservar
+      router.replace(s.usuario.permisos.includes('dashboard:ver') ? '/dashboard' : '/reservar');
     } catch (err) {
       setError((err as Error).message);
     }

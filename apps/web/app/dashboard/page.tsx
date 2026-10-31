@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Encabezado } from '../Encabezado';
-import { api } from '@/lib/api';
+import { api, sesion } from '@/lib/api';
 
 interface FilaSala { espacioId: string; codigo: string; nombre: string; sede: string; tipo: string; horasReservadas: number; indice: number }
 interface Ocupacion {
@@ -29,6 +29,11 @@ export default function Dashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Sin permiso de dashboard (docentes, estudiantes): a la página de reservas
+    if (!sesion()?.usuario.permisos.includes('dashboard:ver')) {
+      window.location.replace('/reservar');
+      return;
+    }
     const q = `desde=${rango.desde}&hasta=${rango.hasta}`;
     Promise.all([
       api<Ocupacion>(`/dashboard/ocupacion?${q}`),

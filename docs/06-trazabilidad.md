@@ -6,8 +6,8 @@ Actualizar en cada PR que avance un requisito.
 | ID | Requisito | Prioridad | Entregable | Implementación | Prueba | Estado |
 |---|---|---|---|---|---|---|
 | R1 | Impedir reservas dobles | Debe | E6 | `reserva_sin_choque` (EXCLUDE, incluye pendientes), V006 | `packages/db/pruebas/reservas.test.ts` (200 casos), `flujo-reservas.db.test.ts` (20 simultáneas) | ✅ |
-| R2 | Centralizar solicitudes | Debe | E6 | `reservas.solicitud` + `POST /reservas` | `flujo-reservas.db.test.ts` | ✅ API · 🟡 web |
-| R3 | Disponibilidad visible | Debe | E11 | `GET /reservas/ocupacion`, móvil `Disponibilidad` | — | 🟡 |
+| R2 | Centralizar solicitudes | Debe | E6 | `reservas.solicitud` + `POST /reservas`, web `reservar/` (precisión al minuto), app móvil | `flujo-reservas.db.test.ts` | ✅ |
+| R3 | Disponibilidad visible | Debe | E11 | `GET /reservas/ocupacion`, web `reservar/` (ocupación del día), móvil `Disponibilidad` | — | 🟡 falta vista calendario |
 | R4 | Aprobación por rol | Debe | E6 | `regla_aprobacion` + `reservas.puede_aprobar` (V010), web `aprobaciones` | `aprobacion_reglas.test.ts`, `flujo-reservas.db.test.ts` | ✅ |
 | R5 | Cancelación por Subdirección + aviso | Debe | E6 | `reservas.service.ts` (`cancelar`), permiso `reserva:cancelar_cualquiera` | `flujo-reservas.db.test.ts` | ✅ |
 | R6 | Notificaciones | Debe | E8 | `comunicacion.notificacion` + cola `envio` (outbox) con preferencias | `flujo-reservas.db.test.ts` | 🟡 falta el proceso que envía correo/push |

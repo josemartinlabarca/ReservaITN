@@ -26,10 +26,13 @@ th { color: var(--muted); font-weight: 500; font-size: 0.875rem; }
 tr.click { cursor: pointer; } tr.click:hover { background: var(--bg); }
 .barra { background: var(--bar-bg); border-radius: 4px; height: 10px; min-width: 120px; }
 .barra > span { display: block; height: 100%; background: var(--bar); border-radius: 4px; }
+/* Grilla de campos de formulario que se adapta al ancho (una columna en el celular) */
+.campos { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
 form.fila { display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap; margin-bottom: 1rem; }
 label { display: grid; gap: 0.25rem; font-size: 0.875rem; color: var(--muted); }
 input, select { padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; }
 button { padding: 0.5rem 1rem; border-radius: 6px; border: 0; background: var(--accent); color: var(--accent-text); font: inherit; cursor: pointer; }
 button.sec { background: transparent; color: var(--text); border: 1px solid var(--border); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
 .error { color: var(--danger); }
 .ok { color: var(--ok); }

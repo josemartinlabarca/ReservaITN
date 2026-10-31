@@ -221,19 +221,23 @@ Todos los usuarios de demostración usan la contraseña **`reservaitn`**:
 | `aseo@itn.cl` | Aseo y mantención | Solo reporta daños (no puede reservar) |
 | `datd@itn.cl` | DATD (patrocinadora) | Dashboard y usuarios |
 
-**Recorrido sugerido (5 minutos), que muestra el flujo central:**
+**Recorrido sugerido (5 minutos), que muestra el flujo central (todo en la web):**
 
-1. En el **celular** (paso 9), entra como `estudiante@itn.cl`. Deja la fecha de mañana (si cae en
-   domingo, usa el lunes), escribe 15:00 a 17:00, 5 asistentes y un motivo. Toca **Repetir cada
-   semana**, indica en **Repetir hasta** una fecha 3 semanas después (AAAA-MM-DD), toca
-   **Buscar sala** y luego **Solicitar** en la sala sugerida (EST-1). Queda *pendiente* y bloquea el horario.
-2. En la **web**, entra como `dir.inf@itn.cl` → **Aprobaciones**. Verás la solicitud como
-   "Serie semanal: N fechas". Apruébala: todas las fechas quedan aprobadas de una vez.
-3. En el celular, pestaña **Avisos**: llegó la notificación de aprobación.
-4. En la web, entra como `subdireccion@itn.cl` → **Dashboard**, elige un rango que incluya esas
-   fechas y haz clic en la sala para ver el detalle.
+1. Entra como `docente@itn.cl`: llegas directo a **Reservar**. Elige un día (por ejemplo, el próximo
+   martes), **Desde 08:55** y **Hasta 10:10** (las horas se eligen al minuto), el espacio **A-101**,
+   la actividad *Clase* y un motivo. Debajo del espacio verás lo que ya está ocupado ese día.
+   Presiona **Reservar**: queda *pendiente de aprobación* y aparece en **Mis reservas**.
+2. Cambia el horario a 09:30–11:00: la página avisa que se cruza y no deja reservar.
+3. **Salir** y entrar como `dir.inf@itn.cl` → **Aprobaciones**. Ahí está la solicitud del docente
+   (le corresponde porque el docente es de Informática). Apruébala.
+4. Vuelve a entrar como `docente@itn.cl`: en **Mis reservas** ahora dice *Aprobada*.
+5. Entra como `subdireccion@itn.cl` → **Dashboard**, elige un rango que incluya ese día y haz clic en
+   A-101 para ver el detalle.
 
-**Sin celular:** puedes crear la solicitud del paso 1 directamente contra la API (macOS / Linux):
+Con la app móvil (paso 9) puedes hacer lo mismo como `estudiante@itn.cl`, por ejemplo con una sala
+de estudio que se repite cada semana; sus avisos aparecen en la pestaña **Avisos**.
+
+**Contra la API directamente** (útil para probar desde la terminal; macOS / Linux):
 
 ```bash
 TOKEN=$(curl -s localhost:3001/api/auth/login -H 'content-type: application/json' -d '{"email":"estudiante@itn.cl","password":"reservaitn"}' | node -pe 'JSON.parse(require("fs").readFileSync(0)).token')
