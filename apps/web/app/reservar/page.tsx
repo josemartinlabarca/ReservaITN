@@ -91,6 +91,13 @@ export default function Reservar() {
 
   const cargarMias = useCallback(() => api<MiReserva[]>('/reservas/mias').then(setMias).catch(() => setMias([])), []);
 
+  // Llegada desde el calendario: /reservar?espacioId=…&fecha=…&desde=…&hasta=…
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const desdeUrl = Object.fromEntries(['espacioId', 'fecha', 'desde', 'hasta'].flatMap((k) => (p.get(k) ? [[k, p.get(k)!]] : [])));
+    if (Object.keys(desdeUrl).length) setForm((f) => ({ ...f, ...desdeUrl }));
+  }, []);
+
   useEffect(() => {
     api<Espacio[]>('/espacios').then(setEspacios).catch((e) => setMsg({ ok: false, texto: e.message }));
     api<{ tiposActividad: TipoActividad[] }>('/catalogos').then((c) => setActividades(c.tiposActividad));

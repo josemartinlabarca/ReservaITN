@@ -46,3 +46,22 @@ textarea { padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px;
 .estado-LIBERADA, .estado-EXPIRADA { background: #ededed; color: #444; }
 .error { color: var(--danger); }
 .ok { color: var(--ok); }
+
+/* Calendario semanal */
+.fila-controles { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: end; justify-content: space-between; }
+.calendario-scroll { overflow-x: auto; }
+.calendario { display: grid; min-width: 720px; }
+.cal-cabecera { text-align: center; font-weight: 600; font-size: 0.875rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
+.cal-hoy { color: var(--accent); }
+.cal-horas { position: relative; }
+.cal-horas span { position: absolute; right: 8px; transform: translateY(-50%); font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cal-horas span:first-child { transform: none; }
+.cal-dia { position: relative; border-left: 1px solid var(--border); background-image: linear-gradient(to bottom, var(--border) 1px, transparent 1px); }
+.cal-clic { cursor: copy; }
+.cal-clic:hover { background-color: color-mix(in srgb, var(--accent) 5%, transparent); }
+.cal-evento { position: absolute; left: 3px; right: 3px; padding: 2px 6px; border-radius: 5px; text-align: left; font-size: 0.75rem; line-height: 1.25; overflow: hidden; cursor: pointer; border: 1px solid transparent; color: var(--text); }
+.evento-APROBADA { background: #e2f0d9; border-color: #a9d18e; color: #1c3d27; }
+.evento-PENDIENTE { background: #fff2cc; border-color: #ffd966; color: #5c4300; }
+.evento-PLANIFICACION { background: #dce6f5; border-color: #9db3dd; color: #1f3864; }
+.leyenda { display: flex; gap: 0.4rem; align-items: center; font-size: 0.8rem; color: var(--muted); }
+.muestra { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid; margin-left: 0.6rem; }

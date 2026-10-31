@@ -19,6 +19,7 @@ export function Encabezado() {
     <header className="top">
       <strong>ReservaITN</strong>
       {tienePermiso(permisos, 'reserva:solicitar') && <Link href="/reservar">Reservar</Link>}
+      <Link href="/calendario">Calendario</Link>
       {tienePermiso(permisos, 'dashboard:ver') && <Link href="/dashboard">Dashboard</Link>}
       {tienePermiso(permisos, 'reserva:aprobar') && <Link href="/aprobaciones">Aprobaciones</Link>}
       <span>{s.usuario.nombre} · {roles.map((r) => r.codigo).join(', ')}</span>
