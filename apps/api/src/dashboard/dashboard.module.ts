@@ -1,5 +1,6 @@
 import { Controller, Get, Module, Query } from '@nestjs/common';
 import { HORARIO, horasOcupadas, indiceOcupacion, rangoFechasSchema, type RangoFechas } from '@reservaitn/shared';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../comun/prisma.service';
 import { RequierePermiso } from '../comun/auth.guard';
 import { ZodPipe } from '../comun/zod.pipe';
@@ -60,6 +61,38 @@ class DashboardController {
       totalReservas: reservas.length,
       porEspacio,
     };
+  }
+
+  /**
+   * Todas las reservas del período con su trazabilidad (R7): quién pidió, cuándo, quién aprobó
+   * (o si fue automática) y el estado. Incluye pendientes, que no cuentan en la ocupación.
+   */
+  @RequierePermiso('dashboard:ver')
+  @Get('reservas')
+  reservas(@Query(new ZodPipe(rangoFechasSchema)) q: RangoFechas) {
+    return this.prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT t.reserva_id                                      AS "reservaId",
+             t.inicio, t.fin,
+             t.estado::text                                    AS estado,
+             t.espacio,
+             t.tipo_actividad                                  AS "tipoActividad",
+             t.origen::text                                    AS origen,
+             t.asistentes,
+             s.descripcion,
+             t.solicitado_en                                   AS "solicitadoEn",
+             ps.nombres || ' ' || ps.apellido_paterno          AS solicitante,
+             pa.nombres || ' ' || pa.apellido_paterno          AS aprobador,
+             (t.decision IS NOT NULL AND t.decidido_por_usuario_id IS NULL) AS "aprobacionAutomatica"
+        FROM reservas.v_reserva_trazabilidad t
+        JOIN reservas.solicitud s ON s.id = t.solicitud_id
+        JOIN seguridad.usuario us ON us.id = t.solicitante_usuario_id
+        JOIN seguridad.persona ps ON ps.id = us.persona_id
+        LEFT JOIN seguridad.usuario ua ON ua.id = t.decidido_por_usuario_id
+        LEFT JOIN seguridad.persona pa ON pa.id = ua.persona_id
+       WHERE t.inicio < ${q.hasta} AND t.fin > ${q.desde}
+         ${q.sedeId ? Prisma.sql`AND t.sede_id = ${q.sedeId}::uuid` : Prisma.empty}
+       ORDER BY t.inicio
+       LIMIT 500`;
   }
 
   /** Indicadores del Plan de Gestión de Beneficios, calculados desde la vista de trazabilidad. */
