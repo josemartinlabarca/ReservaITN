@@ -608,6 +608,7 @@ model reserva {
   creado_en      DateTime       @default(now()) @db.Timestamptz(6)
   actualizado_en DateTime       @default(now()) @db.Timestamptz(6)
   notificacion   notificacion[]
+  cancelacion    cancelacion?
   check_in       check_in?
   espacio        espacio        @relation(fields: [espacio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   solicitud      solicitud      @relation(fields: [solicitud_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -754,6 +755,7 @@ model usuario {
   orden_trabajo     orden_trabajo[]
   reporte_danio     reporte_danio[]
   aprobacion        aprobacion[]
+  cancelacion       cancelacion[]
   check_in          check_in[]
   importacion       importacion[]
   solicitud         solicitud[]
@@ -781,6 +783,18 @@ model usuario_rol {
   @@unique([usuario_id, rol_id, sede_id, carrera_id])
   @@index([rol_id, carrera_id])
   @@schema("seguridad")
+}
+
+model cancelacion {
+  reserva_id   String   @id @db.Uuid
+  usuario_id   String   @db.Uuid
+  motivo       String?
+  cancelado_en DateTime @default(now()) @db.Timestamptz(6)
+  reserva      reserva  @relation(fields: [reserva_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario      usuario  @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([usuario_id])
+  @@schema("reservas")
 }
 
 enum estado_matricula {

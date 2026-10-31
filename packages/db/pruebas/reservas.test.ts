@@ -183,3 +183,33 @@ describe('estados y check-in', () => {
       await acepta(c, sql, [enCurso, m.docente.id]);
     }));
 });
+
+describe('cancelación con motivo (V011)', () => {
+  it('cancelar la reserva de otra persona exige motivo; la propia no', () =>
+    enTransaccion(async (c) => {
+      const m = await mundo(c);
+      const s = await solicitud(c, m);
+      const r1 = await reserva(c, s, m.sala, t('08:00'), t('09:00'), 'APROBADA');
+      const r2 = await reserva(c, s, m.lab, t('08:00'), t('09:00'), 'APROBADA');
+      await c.query(`UPDATE reservas.reserva SET estado = 'CANCELADA' WHERE id IN ($1, $2)`, [r1, r2]);
+      const sql = 'INSERT INTO reservas.cancelacion (reserva_id, usuario_id, motivo) VALUES ($1, $2, $3)';
+      // El director (no es el solicitante) cancela sin motivo: rechazado
+      await rechaza(c, sql, [r1, m.director.id, null], 'debe indicar el motivo');
+      await acepta(c, sql, [r1, m.director.id, 'Evento institucional en la sala']);
+      // El propio docente puede cancelar sin motivo
+      await acepta(c, sql, [r2, m.docente.id, null]);
+      const motivo = await uno(c, 'SELECT motivo_cancelacion FROM reservas.v_reserva_trazabilidad WHERE reserva_id = $1', [r1]);
+      expect(motivo).toBe('Evento institucional en la sala');
+    }));
+
+  it('solo se registra la cancelación de una reserva cancelada, y no se modifica', () =>
+    enTransaccion(async (c) => {
+      const m = await mundo(c);
+      const r = await reserva(c, await solicitud(c, m), m.sala, t('10:00'), t('11:00'), 'APROBADA');
+      const sql = 'INSERT INTO reservas.cancelacion (reserva_id, usuario_id, motivo) VALUES ($1, $2, $3)';
+      await rechaza(c, sql, [r, m.docente.id, 'x'], 'Solo se registra la cancelación');
+      await c.query(`UPDATE reservas.reserva SET estado = 'CANCELADA' WHERE id = $1`, [r]);
+      await acepta(c, sql, [r, m.docente.id, null]);
+      await rechaza(c, `UPDATE reservas.cancelacion SET motivo = 'otro' WHERE reserva_id = $1`, [r], 'solo inserción');
+    }));
+});

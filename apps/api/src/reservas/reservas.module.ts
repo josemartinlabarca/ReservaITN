@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Module, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { z } from 'zod';
 import {
+  cancelacionSchema,
   checkInSchema,
   decisionReservaSchema,
   rechazoSchema,
@@ -45,9 +46,10 @@ class ReservasController {
     return this.svc.checkIn(b.token, u);
   }
 
+  /** Body: { motivo } — obligatorio al cancelar la reserva de otra persona. */
   @Post(':id/cancelar')
-  cancelar(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodPipe(decisionReservaSchema)) b: Decision, @UsuarioActual() u: UsuarioSesion) {
-    return this.svc.cancelar(id, u, b.comentario);
+  cancelar(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodPipe(cancelacionSchema)) b: z.infer<typeof cancelacionSchema>, @UsuarioActual() u: UsuarioSesion) {
+    return this.svc.cancelar(id, u, b.motivo);
   }
 
   @Get(':id/historial')

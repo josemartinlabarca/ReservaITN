@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Encabezado } from '../Encabezado';
-import { api, sesion } from '@/lib/api';
+import { api, descargar, sesion } from '@/lib/api';
+import { DialogoMotivo } from '../DialogoMotivo';
 
 interface FilaSala { espacioId: string; codigo: string; nombre: string; sede: string; tipo: string; horasReservadas: number; indice: number }
 interface Ocupacion {
@@ -26,6 +27,8 @@ interface ReservaPeriodo {
   solicitante: string;
   aprobador: string | null;
   aprobacionAutomatica: boolean;
+  canceladoPor: string | null;
+  motivoCancelacion: string | null;
 }
 
 const JORNADA = { MANANA: 'mañana', TARDE: 'tarde', VESPERTINA: 'vespertina' } as const;
@@ -66,6 +69,12 @@ export default function Dashboard() {
   });
   const [reservas, setReservas] = useState<ReservaPeriodo[]>([]);
   const [soloActivas, setSoloActivas] = useState(true);
+  const [aCancelar, setACancelar] = useState<ReservaPeriodo | null>(null);
+  const [version, setVersion] = useState(0);
+  const [aviso, setAviso] = useState('');
+  const permisos = sesion()?.usuario.permisos ?? [];
+  const puedeCancelar = permisos.includes('reserva:cancelar_cualquiera');
+  const puedeExportar = permisos.includes('reporte:generar');
   const [datos, setDatos] = useState<Ocupacion | null>(null);
   const [ind, setInd] = useState<Indicadores | null>(null);
   const [proy, setProy] = useState<Proyeccion | null>(null);
@@ -87,7 +96,25 @@ export default function Dashboard() {
     ])
       .then(([o, i, p, r]) => { setDatos(o); setInd(i); setProy(p); setReservas(r); setError(''); })
       .catch((e) => setError(e.message));
-  }, [rango]);
+  }, [rango, version]);
+
+  async function exportarExcel() {
+    setAviso('Generando Excel…');
+    try {
+      await descargar(`/dashboard/reporte.xlsx?${consulta(rango)}`, `ReservaITN_Reporte_${rango.desde}_al_${rango.hasta}.xlsx`);
+      setAviso('');
+    } catch (e) {
+      setAviso('');
+      setError((e as Error).message);
+    }
+  }
+
+  async function cancelar(r: ReservaPeriodo, motivo: string) {
+    await api(`/reservas/${r.reservaId}/cancelar`, { method: 'POST', body: JSON.stringify({ motivo }) });
+    setACancelar(null);
+    setAviso(`Reserva de ${r.espacio} cancelada. Se avisó a ${r.solicitante}.`);
+    setVersion((v) => v + 1);
+  }
 
   async function verSala(sala: FilaSala) {
     const delEspacio = await api<OcupSala[]>(`/reservas/ocupacion?${consulta(rango)}&espacioId=${sala.espacioId}`);
@@ -109,6 +136,11 @@ export default function Dashboard() {
           <label>Desde<input type="date" name="desde" defaultValue={rango.desde} /></label>
           <label>Hasta (incluido)<input type="date" name="hasta" defaultValue={rango.hasta} /></label>
           <button type="submit">Generar reporte</button>
+          {puedeExportar && (
+            <button type="button" onClick={exportarExcel} title="Descarga el reporte del período en Excel">
+              ⬇ Descargar Excel
+            </button>
+          )}
           {RANGOS.map(([nombre, calcular]) => (
             <button type="button" className="sec" key={nombre} onClick={() => { setRango(calcular()); setDetalle(null); }}>
               {nombre}
@@ -116,6 +148,7 @@ export default function Dashboard() {
           ))}
         </form>
         {error && <p className="error">{error}</p>}
+        {aviso && <p className="ok">{aviso}</p>}
         {datos && ind && (
           <>
             <section className="grid">
@@ -171,7 +204,7 @@ export default function Dashboard() {
                 ) : (
                   <table>
                     <thead>
-                      <tr><th>Fecha</th><th>Término</th><th>Espacio</th><th>Actividad</th><th>Solicitante</th><th>Estado</th><th>Aprobó</th></tr>
+                      <tr><th>Fecha</th><th>Término</th><th>Espacio</th><th>Actividad</th><th>Solicitante</th><th>Estado</th><th>Aprobó</th>{puedeCancelar && <th></th>}</tr>
                     </thead>
                     <tbody>
                       {filas.map((r) => (
@@ -181,8 +214,20 @@ export default function Dashboard() {
                           <td>{r.espacio}</td>
                           <td>{r.descripcion}<div className="etiqueta">{r.tipoActividad}{r.origen === 'PLANIFICACION' ? ' · planificación' : ''}</div></td>
                           <td>{r.solicitante}</td>
-                          <td>{ESTADO[r.estado] ?? r.estado}</td>
+                          <td>
+                            <span className={`estado estado-${r.estado}`}>{ESTADO[r.estado] ?? r.estado}</span>
+                            {r.motivoCancelacion && (
+                              <div className="etiqueta">Por {r.canceladoPor}: {r.motivoCancelacion}</div>
+                            )}
+                          </td>
                           <td>{r.aprobacionAutomatica ? 'Automática' : (r.aprobador ?? '—')}</td>
+                          {puedeCancelar && (
+                            <td>
+                              {(r.estado === 'PENDIENTE' || r.estado === 'APROBADA') && new Date(r.fin) > new Date() && (
+                                <button className="sec chico" onClick={() => setACancelar(r)}>Cancelar</button>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -208,6 +253,15 @@ export default function Dashboard() {
           </>
         )}
       </main>
+      {aCancelar && (
+        <DialogoMotivo
+          titulo="Cancelar reserva"
+          detalle={`${aCancelar.espacio} · ${fechaCorta(aCancelar.inicio)}–${horaCorta(aCancelar.fin)} · ${aCancelar.descripcion} (${aCancelar.solicitante})`}
+          accion="Cancelar reserva"
+          onConfirmar={(motivo) => cancelar(aCancelar, motivo)}
+          onCerrar={() => setACancelar(null)}
+        />
+      )}
     </>
   );
 }

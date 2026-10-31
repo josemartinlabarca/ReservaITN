@@ -94,9 +94,13 @@ describe('cancelación (R5) y auditoría (R7)', () => {
     const s = await pedir(u.estudiante, a(lunes, 2, '16:00'), a(lunes, 2, '17:00'), { tipoActividad: 'ESTUDIO', asistentes: 5 });
     const reservaId = s.reserva[0].id;
     await expect(svc.cancelar(reservaId, u.docente)).rejects.toBeInstanceOf(ForbiddenException);
+    // Subdirección debe indicar el motivo
+    await expect(svc.cancelar(reservaId, u.sub)).rejects.toThrow(/motivo/);
     const r = await svc.cancelar(reservaId, u.sub, 'Evento institucional');
     expect(r.estado).toBe('CANCELADA');
-    expect(await prisma.notificacion.count({ where: { reserva_id: reservaId, evento_codigo: 'RESERVA_CANCELADA', usuario_id: u.estudiante.id } })).toBe(1);
+    const aviso = await prisma.notificacion.findFirstOrThrow({ where: { reserva_id: reservaId, evento_codigo: 'RESERVA_CANCELADA', usuario_id: u.estudiante.id } });
+    expect(aviso.cuerpo).toContain('Evento institucional');
+    expect(await prisma.cancelacion.findUnique({ where: { reserva_id: reservaId } })).toMatchObject({ usuario_id: u.sub.id, motivo: 'Evento institucional' });
 
     // Cada cambio queda en la bitácora con su actor
     const eventos = await prisma.evento.findMany({ where: { tabla: 'reserva', registro_id: reservaId }, orderBy: { id: 'asc' } });

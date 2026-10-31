@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { tienePermiso, type ReservaCreate } from '@reservaitn/shared';
+import { MOTIVO_MINIMO, tienePermiso, type ReservaCreate } from '@reservaitn/shared';
 import { PrismaService, type Tx } from '../comun/prisma.service';
 import { NotificacionesService } from '../notificaciones/notificaciones.module';
 import type { UsuarioSesion } from '../comun/auth.guard';
@@ -163,23 +163,30 @@ export class ReservasService {
     });
   }
 
-  /** Cancela una reserva (una fecha de la serie). Propia, o cualquiera con el permiso de Subdirección (R5). */
-  async cancelar(reservaId: string, u: UsuarioSesion, comentario?: string) {
+  /**
+   * Cancela una reserva (una fecha de la serie): propia, o de cualquier persona con el permiso de
+   * Subdirección (R5). No se borra: queda en `reservas.cancelacion` quién, cuándo y por qué (V011).
+   * Cancelar la reserva de otra persona exige motivo, que recibe el solicitante.
+   */
+  async cancelar(reservaId: string, u: UsuarioSesion, motivo?: string) {
     return this.prisma.conActor(u.id, async (tx) => {
       const r = await tx.reserva.findUnique({ where: { id: reservaId }, include: { solicitud: true, espacio: true } });
       if (!r) throw new NotFoundException('Reserva no encontrada');
       const propia = r.solicitud.solicitante_usuario_id === u.id;
       if (!propia && !tienePermiso(u.permisos, 'reserva:cancelar_cualquiera'))
         throw new ForbiddenException('Solo la Subdirección puede cancelar reservas de otros');
+      if (!propia && (motivo ?? '').trim().length < MOTIVO_MINIMO)
+        throw new BadRequestException('Indique el motivo de la cancelación (lo recibirá el solicitante)');
       // El trigger reserva_transicion_valida rechaza estados que no se pueden cancelar
       const actualizada = await tx.reserva.update({ where: { id: reservaId }, data: { estado: 'CANCELADA' } });
+      await tx.cancelacion.create({ data: { reserva_id: reservaId, usuario_id: u.id, motivo: motivo?.trim() || null } });
       if (!propia) {
         await this.notif.notificar(
           tx,
           [r.solicitud.solicitante_usuario_id],
           'RESERVA_CANCELADA',
           'Su reserva fue cancelada',
-          `${r.espacio.codigo}, ${fmt(r.inicio)}${comentario ? ` — ${comentario}` : ''}`,
+          `${r.espacio.codigo}, ${fmt(r.inicio)} — Motivo: ${motivo!.trim()} (${u.nombre})`,
           { reservaId },
         );
       }
@@ -221,6 +228,7 @@ export class ReservasService {
         espacio: { select: { codigo: true, nombre: true } },
         solicitud: { select: { id: true, descripcion: true } },
         check_in: { select: { registrado_en: true } },
+        cancelacion: { select: { motivo: true, cancelado_en: true } },
       },
       orderBy: { inicio: 'asc' },
     });

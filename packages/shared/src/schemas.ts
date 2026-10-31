@@ -127,6 +127,11 @@ export const decisionReservaSchema = z.object({
 export const rechazoSchema = z.object({
   comentario: z.string({ required_error: 'Indique el motivo del rechazo' }).trim().min(3, 'Indique el motivo del rechazo').max(300),
 });
+/** Cancelar la reserva de otra persona exige motivo (lo valida también la base, V011). */
+export const cancelacionSchema = z.object({
+  motivo: z.string().trim().max(300, 'Máximo 300 caracteres').optional(),
+});
+export const MOTIVO_MINIMO = 5;
 export const checkInSchema = z.object({ token: z.string().regex(/^[0-9a-f]{32}$/, 'Código QR inválido') });
 
 export const rangoFechasSchema = z

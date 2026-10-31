@@ -29,7 +29,7 @@ export function esChoqueBD(e: unknown): boolean {
 /** Mensaje de un RAISE EXCEPTION de los triggers (ej. "Transición de reserva no permitida"). */
 function mensajeDeTrigger(e: unknown): string | null {
   const texto = String((e as Error)?.message ?? '') + JSON.stringify((e as { meta?: unknown })?.meta ?? '');
-  const m = /(Transición de reserva no permitida[^"`\\]*|Solo se puede hacer check-in[^"`\\]*|El check-in debe hacerse[^"`\\]*|no tiene reservas pendientes[^"`\\]*|es obligatorio y no se puede desactivar)/.exec(texto);
+  const m = /(Transición de reserva no permitida[^"`\\]*|Solo se puede hacer check-in[^"`\\]*|El check-in debe hacerse[^"`\\]*|no tiene reservas pendientes[^"`\\]*|es obligatorio y no se puede desactivar|debe indicar el motivo[^"`\\]*)/.exec(texto);
   return m ? m[1].trim() : null;
 }
 

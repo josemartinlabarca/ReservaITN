@@ -46,13 +46,14 @@ flowchart LR
 | GET | `/api/importaciones` | `planificacion:importar` | R9 |
 | POST | `/api/reservas` (única o semanal con `repetirHasta`) | `reserva:solicitar` | R1, R2, R4, R11, D11–D13 |
 | GET | `/api/reservas/ocupacion?desde&hasta&espacioId`, `/api/reservas/mias` | sesión | R3 |
-| POST | `/api/reservas/:id/cancelar` | propia o `reserva:cancelar_cualquiera` | R5 |
+| POST | `/api/reservas/:id/cancelar` (`motivo`, obligatorio si la reserva es de otra persona) | propia o `reserva:cancelar_cualquiera` | R5, R7 (queda en `reservas.cancelacion`) |
 | POST | `/api/reservas/check-in` (`token` del QR) | sesión | R18, D15 |
 | GET | `/api/reservas/:id/historial` | sesión | R7 (vista de trazabilidad + bitácora) |
 | GET | `/api/solicitudes/pendientes` | `reserva:aprobar` | R4: solo las que `reservas.puede_aprobar` permite |
 | POST | `/api/solicitudes/:id/aprobar`, `/rechazar` (motivo obligatorio) | `reserva:aprobar` | R4, R6, D14 |
 | POST | `/api/sugerencia` | `reserva:solicitar` | R10 |
-| GET | `/api/dashboard/ocupacion`, `/api/dashboard/indicadores` | `dashboard:ver` | R12, R13, B3, B6 |
+| GET | `/api/dashboard/ocupacion`, `/api/dashboard/indicadores`, `/api/dashboard/reservas` | `dashboard:ver` | R12, R13, R7, B3, B6 |
+| GET | `/api/dashboard/reporte.xlsx?desde&hasta&sedeId` | `reporte:generar` | R13: Excel con resumen, ocupación por espacio, detalle de reservas y uso por jornada |
 | GET | `/api/proyeccion` | `dashboard:ver` | R14 |
 | GET/PATCH | `/api/notificaciones/mias`, `/:id/leida` | sesión | R6 |
 | POST | `/api/mantencion/inspecciones` | `inventario:registrar` | R17, D17 |

@@ -29,6 +29,7 @@ interface MiReserva {
   expira_en: string | null;
   espacio: { codigo: string; nombre: string };
   solicitud: { id: string; descripcion: string };
+  cancelacion: { motivo: string | null } | null;
 }
 interface SolicitudCreada { reserva: { estado: string; inicio: string }[] }
 
@@ -306,7 +307,10 @@ export default function Reservar() {
                     <td>{hora(r.fin)}</td>
                     <td>{r.espacio.codigo}</td>
                     <td>{r.solicitud.descripcion}</td>
-                    <td>{ESTADOS[r.estado] ?? r.estado}</td>
+                    <td>
+                      <span className={`estado estado-${r.estado}`}>{ESTADOS[r.estado] ?? r.estado}</span>
+                      {r.cancelacion?.motivo && <div className="etiqueta">Motivo: {r.cancelacion.motivo}</div>}
+                    </td>
                     <td>
                       {(r.estado === 'PENDIENTE' || r.estado === 'APROBADA') && new Date(r.fin) > new Date() && (
                         <button className="sec" onClick={() => cancelar(r.id)}>Cancelar</button>

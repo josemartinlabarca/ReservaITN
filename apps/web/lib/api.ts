@@ -42,3 +42,20 @@ export async function api<T>(ruta: string, init: RequestInit = {}): Promise<T> {
   if (!res.ok) throw new ErrorApi(res.status, body.mensaje ?? body.message ?? 'Error', body.errores);
   return body as T;
 }
+
+/** Descarga un archivo de la API (con la sesión) y lo guarda con el nombre que indica el servidor. */
+export async function descargar(ruta: string, nombrePorDefecto: string) {
+  const s = sesion();
+  const res = await fetch(`${BASE}${ruta}`, { headers: s ? { authorization: `Bearer ${s.token}` } : {} });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ErrorApi(res.status, body.mensaje ?? body.message ?? 'No se pudo generar el archivo');
+  }
+  const nombre = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? nombrePorDefecto;
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombre;
+  a.click();
+  URL.revokeObjectURL(url);
+}
