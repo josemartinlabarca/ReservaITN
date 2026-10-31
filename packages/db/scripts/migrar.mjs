@@ -25,7 +25,24 @@ if (!url) {
 }
 
 const cliente = new pg.Client({ connectionString: url });
-await cliente.connect();
+try {
+  await cliente.connect();
+} catch (e) {
+  // Mensajes claros para los errores de conexión más comunes (ver docs/00-guia-de-inicio.md)
+  const destino = url.replace(/:\/\/([^:]+):[^@]*@/, '://$1:****@');
+  const ayuda = {
+    '28P01':
+      'La base rechazó el usuario o la contraseña.\n' +
+      '  · Si tienes PostgreSQL instalado en el computador, crea el usuario o corrige su contraseña\n' +
+      "    (en SQL Shell: ALTER ROLE reservaitn WITH LOGIN PASSWORD 'reservaitn';).\n" +
+      '  · Si usas Docker, recrea la base: docker compose -f infra/docker-compose.yml down -v && pnpm db:up',
+    '3D000': 'El usuario existe, pero la base no. Créala: CREATE DATABASE reservaitn OWNER reservaitn;',
+    ECONNREFUSED: 'No hay ningún PostgreSQL escuchando. Abre Docker Desktop y ejecuta pnpm db:up, o inicia tu PostgreSQL.',
+  }[e.code];
+  console.error(`✘ No se pudo conectar a ${destino}\n  ${ayuda ?? e.message}`);
+  console.error('  Más ayuda: docs/00-guia-de-inicio.md, sección "Problemas frecuentes".');
+  process.exit(1);
+}
 try {
   await cliente.query(`CREATE TABLE IF NOT EXISTS public.migracion_aplicada (
     version    text PRIMARY KEY,

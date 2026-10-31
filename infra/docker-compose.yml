@@ -1,4 +1,6 @@
 # Entorno local: PostgreSQL + Mailpit (bandeja de correo falsa para probar notificaciones)
+# Nombre fijo: en Docker Desktop aparece como "reservaitn" (si no, tomaría el nombre de la carpeta, "infra")
+name: reservaitn
 services:
   db:
     image: postgres:16

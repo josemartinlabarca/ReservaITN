@@ -90,6 +90,12 @@ docker compose -f infra/docker-compose.yml ps
 ```
 
 Esto crea un PostgreSQL 16 con usuario, contraseña y base `reservaitn`, y Mailpit para los correos.
+En Docker Desktop aparece como el grupo **`reservaitn`**.
+
+> **El puerto 5432 debe estar libre.** Si en Docker Desktop tienes otro proyecto corriendo con su propio
+> PostgreSQL, o un PostgreSQL instalado en Windows, ese ocupa el puerto y `pnpm db:seed` fallará con
+> *password authentication failed*. Detén el otro proyecto (botón ■ en Docker Desktop) antes de
+> `pnpm db:up`. Para ver quién usa cada puerto: `docker ps --format "table {{.Names}}\t{{.Ports}}"`.
 
 ### Opción B: PostgreSQL instalado en tu computador
 
@@ -340,7 +346,7 @@ pnpm db:seed
 |---|---|---|
 | `pnpm: command not found` | Corepack no activado | `corepack enable` y abrir una terminal nueva |
 | `ECONNREFUSED 127.0.0.1:5432` o `P1001` | La base no está corriendo | Abrir Docker Desktop y `pnpm db:up` |
-| `password authentication failed` | Otro PostgreSQL ocupa el puerto 5432 con otras credenciales | Detener el otro PostgreSQL o cambiar el puerto en `infra/docker-compose.yml` y en `DATABASE_URL` |
+| `password authentication failed for user "reservaitn"` | El PostgreSQL que responde en el puerto 5432 no tiene ese usuario con esa contraseña. Pasa sobre todo cuando hay un PostgreSQL instalado en Windows: ocupa el puerto aunque también uses Docker | **PostgreSQL instalado:** en SQL Shell, `CREATE ROLE reservaitn LOGIN PASSWORD 'reservaitn';` y luego `ALTER ROLE reservaitn WITH LOGIN PASSWORD 'reservaitn';` y `CREATE DATABASE reservaitn OWNER reservaitn;` (si alguno dice *already exists*, no importa). **Solo Docker:** `docker compose -f infra/docker-compose.yml down -v` y `pnpm db:up` |
 | `Port 3000 is already in use` (o 3001) | Otra app usa el puerto | Cerrarla, o en macOS / Linux: `npx kill-port 3000 3001` |
 | `La migración V00X cambió después de aplicarse` | Alguien editó una migración ya aplicada | No se editan migraciones: revertir el cambio y crear una nueva. En desarrollo, reiniciar la base |
 | La web dice *Credenciales inválidas* con los usuarios demo | No se cargaron los datos de demostración | `pnpm db:seed` |
