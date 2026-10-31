@@ -97,18 +97,20 @@ En Docker Desktop aparece como el grupo **`reservaitn`**.
 > *password authentication failed*. Detén el otro proyecto (botón ■ en Docker Desktop) antes de
 > `pnpm db:up`. Para ver quién usa cada puerto: `docker ps --format "table {{.Names}}\t{{.Ports}}"`.
 
-**Si prefieres no detener el otro proyecto**, usa el puerto 5433 para ReservaITN:
+**Si prefieres no detener el otro proyecto**, usa otro puerto para ReservaITN, por ejemplo el 5434.
+Antes, comprueba que esté libre: `netstat -ano | findstr :5434` (Windows) o `lsof -i :5434` (macOS / Linux)
+no deben mostrar nada. El 5433 suele estar ocupado por otros proyectos.
 
-1. Copia `infra/.env.example` como `infra/.env` (contiene `DB_PUERTO=5433`). En Windows:
+1. Copia `infra/.env.example` como `infra/.env` (contiene `DB_PUERTO=5434`). En Windows:
 
    ```bash
    copy infra\.env.example infra\.env
    ```
 
-2. En `apps/api/.env` (se crea en el paso 5), cambia `5432` por `5433` en `DATABASE_URL`:
+2. En `apps/api/.env` (se crea en el paso 5), cambia `5432` por `5434` en `DATABASE_URL`:
 
    ```
-   DATABASE_URL="postgresql://reservaitn:reservaitn@localhost:5433/reservaitn"
+   DATABASE_URL="postgresql://reservaitn:reservaitn@localhost:5434/reservaitn"
    ```
 
 3. Ejecuta `pnpm db:up` (y, si ya lo habías intentado, antes `pnpm db:down`).
@@ -362,7 +364,7 @@ pnpm db:seed
 |---|---|---|
 | `pnpm: command not found` | Corepack no activado | `corepack enable` y abrir una terminal nueva |
 | `ECONNREFUSED 127.0.0.1:5432` o `P1001` | La base no está corriendo | Abrir Docker Desktop y `pnpm db:up` |
-| `password authentication failed for user "reservaitn"` | El PostgreSQL que responde en el puerto 5432 no tiene ese usuario con esa contraseña. Pasa sobre todo cuando hay un PostgreSQL instalado en Windows: ocupa el puerto aunque también uses Docker | **PostgreSQL instalado:** en SQL Shell, `CREATE ROLE reservaitn LOGIN PASSWORD 'reservaitn';` y luego `ALTER ROLE reservaitn WITH LOGIN PASSWORD 'reservaitn';` y `CREATE DATABASE reservaitn OWNER reservaitn;` (si alguno dice *already exists*, no importa). **Solo Docker:** `docker compose -f infra/docker-compose.yml down -v` y `pnpm db:up` |
+| `password authentication failed for user "reservaitn"` | Otro PostgreSQL responde en `localhost:5432`. En Windows, un PostgreSQL instalado escucha en `127.0.0.1:5432` y **gana sobre Docker** aunque el contenedor esté corriendo (`netstat -ano \| findstr :5432` lo muestra con su PID) | Usar otro puerto para ReservaITN (paso 4, `DB_PUERTO=5434`), o detener ese PostgreSQL en *Servicios* de Windows |
 | `Port 3000 is already in use` (o 3001) | Otra app usa el puerto | Cerrarla, o en macOS / Linux: `npx kill-port 3000 3001` |
 | `La migración V00X cambió después de aplicarse` | Alguien editó una migración ya aplicada | No se editan migraciones: revertir el cambio y crear una nueva. En desarrollo, reiniciar la base |
 | La web dice *Credenciales inválidas* con los usuarios demo | No se cargaron los datos de demostración | `pnpm db:seed` |
