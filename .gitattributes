@@ -1,0 +1,6 @@
+# Saltos de línea LF en todos los sistemas (incluido Windows). Es necesario para que el
+# checksum de las migraciones SQL sea el mismo en todos los computadores.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.xlsx binary

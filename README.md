@@ -48,7 +48,10 @@ reservaitn/
 
 ## Puesta en marcha local
 
-Requisitos: Node 22, pnpm 10, Docker.
+> Guía paso a paso, con la app móvil, las pruebas y la solución de problemas frecuentes:
+> **[docs/00-guia-de-inicio.md](docs/00-guia-de-inicio.md)**. Resumen:
+
+Requisitos: Node 22, pnpm 10 (`corepack enable`), Docker.
 
 ```bash
 pnpm install
@@ -74,7 +77,7 @@ pnpm dev
 
 - API: http://localhost:3001/api/health
 - Web: http://localhost:3000 (usuario `subdireccion@itn.cl`, contraseña `reservaitn`)
-- Móvil: `pnpm --filter @reservaitn/mobile dev` y escanear el QR con Expo Go
+- Móvil (en otra terminal): `pnpm dev:movil` y escanear el QR con Expo Go (ver la guía: hay que configurar la IP del computador)
 - Correos de prueba: http://localhost:8025
 
 Usuarios demo (contraseña `reservaitn`), todos `@itn.cl`:
@@ -92,7 +95,8 @@ Usuarios demo (contraseña `reservaitn`), todos `@itn.cl`:
 
 | Comando | Qué hace |
 |---|---|
-| `pnpm dev` | Levanta API, web y compila `shared` en modo watch |
+| `pnpm dev` | Levanta API y web, y compila `shared` en modo watch |
+| `pnpm dev:movil` | Levanta Metro (Expo) para la app móvil |
 | `pnpm build` | Compila todo |
 | `pnpm test` | Pruebas unitarias (reglas, validaciones) |
 | `pnpm --filter @reservaitn/db test:db` | 40 pruebas de restricciones del modelo de datos |
@@ -102,6 +106,7 @@ Usuarios demo (contraseña `reservaitn`), todos `@itn.cl`:
 
 ## Documentación
 
+0. [Guía de inicio](docs/00-guia-de-inicio.md)
 1. [Metodología de trabajo](docs/01-metodologia.md)
 2. [Roadmap paso a paso por sprint](docs/02-roadmap.md)
 3. [Arquitectura](docs/03-arquitectura.md)

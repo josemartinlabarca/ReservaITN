@@ -7,7 +7,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run dev --parallel --filter=@reservaitn/api --filter=@reservaitn/web --filter=@reservaitn/shared",
+    "dev:movil": "pnpm --filter @reservaitn/mobile dev",
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
