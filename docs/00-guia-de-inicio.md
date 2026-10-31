@@ -44,7 +44,7 @@ instalar Docker, usa la opción B del paso 4.
 ## Paso 2. Clonar el repositorio
 
 ```bash
-git clone https://github.com/josemartinlabarca/reservaitn.git
+git clone https://github.com/josemartinlabarca/ReservaITN.git
 ```
 
 ```bash
