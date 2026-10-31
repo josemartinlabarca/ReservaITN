@@ -8,7 +8,8 @@ services:
       POSTGRES_USER: reservaitn
       POSTGRES_PASSWORD: reservaitn
       POSTGRES_DB: reservaitn
-    ports: ["5432:5432"]
+    # Puerto configurable en infra/.env (DB_PUERTO=5433) si el 5432 lo usa otro proyecto
+    ports: ["${DB_PUERTO:-5432}:5432"]
     volumes: [db_data:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U reservaitn"]

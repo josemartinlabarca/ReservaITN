@@ -97,6 +97,22 @@ En Docker Desktop aparece como el grupo **`reservaitn`**.
 > *password authentication failed*. Detén el otro proyecto (botón ■ en Docker Desktop) antes de
 > `pnpm db:up`. Para ver quién usa cada puerto: `docker ps --format "table {{.Names}}\t{{.Ports}}"`.
 
+**Si prefieres no detener el otro proyecto**, usa el puerto 5433 para ReservaITN:
+
+1. Copia `infra/.env.example` como `infra/.env` (contiene `DB_PUERTO=5433`). En Windows:
+
+   ```bash
+   copy infra\.env.example infra\.env
+   ```
+
+2. En `apps/api/.env` (se crea en el paso 5), cambia `5432` por `5433` en `DATABASE_URL`:
+
+   ```
+   DATABASE_URL="postgresql://reservaitn:reservaitn@localhost:5433/reservaitn"
+   ```
+
+3. Ejecuta `pnpm db:up` (y, si ya lo habías intentado, antes `pnpm db:down`).
+
 ### Opción B: PostgreSQL instalado en tu computador
 
 Instala PostgreSQL 16 (o 13 o superior) y crea el usuario y la base. Con `psql` como administrador:
