@@ -23,11 +23,11 @@ Gonzalo Pino (ingeniero de sistemas) y Braulio Campos (tester UA).
 ## Qué hace
 
 - **Reservas sin choques:** dos reservas no pueden ocupar la misma sala al mismo tiempo; lo garantiza una restricción `EXCLUDE` de PostgreSQL, además de la validación en la API.
-- **Aprobación por roles:** subdirección, jefaturas, docentes, estudiantes y mantención ven y hacen solo lo que su rol permite.
+- **Aprobación por roles:** subdirección, dirección académica, direcciones de carrera, docentes, estudiantes, operaciones y aseo ven y hacen solo lo que su rol permite.
 - **Sala sugerida:** si la sala pedida está ocupada, el sistema propone alternativas.
 - **Planificación desde Excel:** la carga académica del semestre se importa de una vez.
 - **Dashboard:** ocupación, reportes por rango de fechas y proyección de los días y jornadas de mayor uso.
-- **App móvil:** docentes y estudiantes reservan desde el teléfono; el equipo de mantención reporta daños.
+- **App móvil:** una app para docentes y estudiantes, y otra para el equipo de aseo y mantención, que registra daños e inventario.
 
 ## Estructura
 
