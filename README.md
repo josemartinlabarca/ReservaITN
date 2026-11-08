@@ -1,5 +1,12 @@
 # ReservaITN
 
+[![CI](https://github.com/josemartinlabarca/ReservaITN/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/josemartinlabarca/ReservaITN/actions/workflows/ci.yml)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![NestJS](https://img.shields.io/badge/NestJS-E0234E?logo=nestjs&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white)
+![Expo](https://img.shields.io/badge/Expo-000020?logo=expo&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL%2016-4169E1?logo=postgresql&logoColor=white)
+
 Sistema de reservas de salas y laboratorios para el **Instituto Técnico del Norte (ITN), Arica**.
 Proyecto P05 de **JBG Tech**: Benjamín Naveas (director y frontend), José Labarca (full stack),
 Gonzalo Pino (ingeniero de sistemas) y Braulio Campos (tester UA).
@@ -12,6 +19,15 @@ Gonzalo Pino (ingeniero de sistemas) y Braulio Campos (tester UA).
 | API y reglas de negocio | `apps/api` (NestJS + Prisma) |
 | Base de datos | PostgreSQL 16, modelo v1 en `packages/db` (SQL) |
 | Validaciones y reglas compartidas | `packages/shared` (Zod + TypeScript) |
+
+## Qué hace
+
+- **Reservas sin choques:** dos reservas no pueden ocupar la misma sala al mismo tiempo; lo garantiza una restricción `EXCLUDE` de PostgreSQL, además de la validación en la API.
+- **Aprobación por roles:** subdirección, jefaturas, docentes, estudiantes y mantención ven y hacen solo lo que su rol permite.
+- **Sala sugerida:** si la sala pedida está ocupada, el sistema propone alternativas.
+- **Planificación desde Excel:** la carga académica del semestre se importa de una vez.
+- **Dashboard:** ocupación, reportes por rango de fechas y proyección de los días y jornadas de mayor uso.
+- **App móvil:** docentes y estudiantes reservan desde el teléfono; el equipo de mantención reporta daños.
 
 ## Estructura
 
