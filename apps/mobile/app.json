@@ -2,11 +2,34 @@
   "expo": {
     "name": "ReservaITN",
     "slug": "reservaitn",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
-    "ios": { "bundleIdentifier": "cl.itn.reservaitn", "supportsTablet": false },
-    "android": { "package": "cl.itn.reservaitn" },
-    "extra": { "apiUrl": "http://localhost:3001/api" }
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "cl.itn.reservaitn",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "ReservaITN usa la cámara solo para leer el código QR de la sala al hacer check-in."
+      }
+    },
+    "android": {
+      "package": "cl.itn.reservaitn",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-status-bar",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "ReservaITN usa la cámara solo para leer el código QR de la sala al hacer check-in.",
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-notifications"
+    ]
   }
 }

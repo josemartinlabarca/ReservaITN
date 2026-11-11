@@ -1,5 +1,6 @@
 import { Body, ConflictException, Controller, ForbiddenException, Get, Module, NotFoundException, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
-import { espacioCreateSchema, espacioUpdateSchema, tienePermiso, type EspacioCreate, type EspacioUpdate } from '@reservaitn/shared';
+import { contenidoQr, espacioCreateSchema, espacioUpdateSchema, tienePermiso, type EspacioCreate, type EspacioUpdate } from '@reservaitn/shared';
+import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../comun/prisma.service';
 import { RequierePermiso, UsuarioActual, type UsuarioSesion } from '../comun/auth.guard';
 import { ZodPipe } from '../comun/zod.pipe';
@@ -62,6 +63,25 @@ class RecursosController {
       this.prisma.item.findMany({ where: { activo: true }, orderBy: { nombre: 'asc' } }),
     ]);
     return { tiposEspacio, tiposActividad, items };
+  }
+
+  /** Contenido del QR de check-in del espacio (D15), para mostrarlo o imprimirlo. */
+  @RequierePermiso('recurso:gestionar')
+  @Get('espacios/:id/qr')
+  async qr(@Param('id', ParseUUIDPipe) id: string) {
+    const e = await this.prisma.espacio.findUnique({ where: { id }, select: { codigo: true, nombre: true, token_qr: true } });
+    if (!e) throw new NotFoundException('Espacio no encontrado');
+    return { codigo: e.codigo, nombre: e.nombre, contenido: contenidoQr(e.token_qr) };
+  }
+
+  /** Genera un código nuevo: el QR impreso anterior deja de servir (por ejemplo, si se fotografió). */
+  @RequierePermiso('recurso:gestionar')
+  @Post('espacios/:id/qr/regenerar')
+  async regenerarQr(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() u: UsuarioSesion) {
+    const e = await this.prisma.conActor(u.id, (tx) =>
+      tx.espacio.update({ where: { id }, data: { token_qr: randomBytes(16).toString('hex') }, select: { codigo: true, nombre: true, token_qr: true } }),
+    );
+    return { codigo: e.codigo, nombre: e.nombre, contenido: contenidoQr(e.token_qr) };
   }
 
   @Get('carreras')

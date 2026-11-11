@@ -84,3 +84,14 @@ describe('mensajes en español', () => {
     expect(mensajes).toContain('asistentes: Debe ser un número');
   });
 });
+
+describe('código QR de check-in', () => {
+  it('reconoce solo los QR de ReservaITN', async () => {
+    const { contenidoQr, tokenDesdeQr } = await import('./index');
+    const t = '0123456789abcdef0123456789abcdef';
+    expect(tokenDesdeQr(contenidoQr(t))).toBe(t);
+    expect(tokenDesdeQr(`  ${contenidoQr(t)}\n`)).toBe(t);
+    expect(tokenDesdeQr('https://www.google.com')).toBeNull();
+    expect(tokenDesdeQr('reservaitn:checkin:XYZ')).toBeNull();
+  });
+});

@@ -54,6 +54,15 @@ describe('administración de espacios', () => {
     expect((await recursos.espacios(sub, undefined, undefined, 'true')).some((x) => x.id === e.id)).toBe(true);
   });
 
+  it('regenerar el QR invalida el código impreso anterior (D15)', async () => {
+    const { e } = await espacioNuevo();
+    const antes = (await recursos.qr(e.id)).contenido;
+    const despues = (await recursos.regenerarQr(e.id, sub)).contenido;
+    expect(despues).toMatch(/^reservaitn:checkin:[0-9a-f]{32}$/);
+    expect(despues).not.toBe(antes);
+    expect((await recursos.qr(e.id)).contenido).toBe(despues);
+  });
+
   it('solo los administradores ven los espacios desactivados', async () => {
     expect(() => recursos.espacios(docente, undefined, undefined, 'true')).toThrow(ForbiddenException);
   });

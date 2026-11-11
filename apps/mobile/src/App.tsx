@@ -1,30 +1,71 @@
-import { useEffect, useState } from 'react';
-import { SafeAreaView, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { tienePermiso } from '@reservaitn/shared';
-import { cargarSesion, guardarSesion, type Sesion } from './api';
-import { Boton, colores } from './ui';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { alExpirarSesion, api, cargarSesion, guardarSesion, tiene, type Sesion } from './api';
+import { colores } from './ui';
 import { Login } from './comun/Login';
-import { Disponibilidad } from './docentes/Disponibilidad';
 import { Notificaciones } from './comun/Notificaciones';
+import { EscanerQR } from './comun/EscanerQR';
+import { registrarPush } from './comun/push';
+import { Reservar } from './docentes/Reservar';
+import { MisReservas } from './docentes/MisReservas';
+import { Inventario } from './mantencion/Inventario';
 import { ReporteDanio } from './mantencion/ReporteDanio';
 
-type Pestana = 'reservar' | 'avisos' | 'danio';
+type Pestana = 'reservar' | 'mias' | 'inventario' | 'danio' | 'avisos';
+const CONSULTA_AVISOS_MS = 30_000;
 
 /**
- * Una sola app con interfaz según el rol (E11 + E12):
- * docentes/estudiantes reservan; aseo y mantención reportan daños e inventario.
+ * Una sola app con pestañas según los permisos de la persona (ADR 0003):
+ * docentes y estudiantes reservan y hacen check-in (E11); aseo y mantención cuentan inventario y
+ * reportan daños (E12). Todos ven sus avisos.
  */
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <Contenido />
+    </SafeAreaProvider>
+  );
+}
+
+function Contenido() {
   const [sesion, setSesion] = useState<Sesion | null | undefined>(undefined);
   const [pestana, setPestana] = useState<Pestana>('reservar');
+  const [noLeidas, setNoLeidas] = useState(0);
+  const [escaner, setEscaner] = useState(false);
+  const [version, setVersion] = useState(0); // fuerza recargar listas tras reservar o hacer check-in
+
+  const pestanas: { id: Pestana; texto: string }[] = sesion
+    ? [
+        ...(tiene('reserva:solicitar') ? [{ id: 'reservar' as const, texto: 'Reservar' }, { id: 'mias' as const, texto: 'Mis reservas' }] : []),
+        ...(tiene('inventario:registrar') ? [{ id: 'inventario' as const, texto: 'Inventario' }] : []),
+        ...(tiene('danio:reportar') ? [{ id: 'danio' as const, texto: 'Daños' }] : []),
+        { id: 'avisos' as const, texto: noLeidas ? `Avisos (${noLeidas})` : 'Avisos' },
+      ]
+    : [];
+
+  const entrar = useCallback((s: Sesion | null) => {
+    setSesion(s);
+    if (!s) return;
+    setPestana(s.usuario.permisos.includes('reserva:solicitar') ? 'reservar' : s.usuario.permisos.includes('inventario:registrar') ? 'inventario' : 'avisos');
+    registrarPush(); // silencioso: en Expo Go no aplica
+  }, []);
 
   useEffect(() => {
-    cargarSesion().then((s) => {
-      setSesion(s);
-      if (s && !tienePermiso(s.usuario.permisos, 'reserva:solicitar')) setPestana('danio');
-    });
+    alExpirarSesion(() => setSesion(null));
+    cargarSesion().then(entrar);
+  }, [entrar]);
+
+  const contarAvisos = useCallback(() => {
+    api<{ total: number }>('/notificaciones/no-leidas').then((r) => setNoLeidas(r.total)).catch(() => {});
   }, []);
+  useEffect(() => {
+    if (!sesion) return;
+    contarAvisos();
+    const t = setInterval(contarAvisos, CONSULTA_AVISOS_MS);
+    return () => clearInterval(t);
+  }, [sesion, contarAvisos]);
 
   if (sesion === undefined) return null;
   if (!sesion)
@@ -32,40 +73,43 @@ export default function App() {
       <Login
         onIngreso={async (s) => {
           await guardarSesion(s);
-          setSesion(s);
-          setPestana(tienePermiso(s.usuario.permisos, 'reserva:solicitar') ? 'reservar' : 'danio');
+          entrar(s);
         }}
       />
     );
 
-  const { permisos } = sesion.usuario;
-  const pestanas: [Pestana, string][] = [
-    ...(tienePermiso(permisos, 'reserva:solicitar') ? [['reservar', 'Reservar'] as [Pestana, string]] : []),
-    ...(tienePermiso(permisos, 'danio:reportar') ? [['danio', 'Reportar daño'] as [Pestana, string]] : []),
-    ['avisos', 'Avisos'],
-  ];
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colores.fondo }}>
-      <StatusBar style="auto" />
-      <View style={{ padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontSize: 18, fontWeight: '700' }}>ReservaITN</Text>
-        <Text style={{ color: colores.suave }} onPress={async () => { await guardarSesion(null); setSesion(null); }}>
-          {sesion.usuario.nombre} · Salir
-        </Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colores.fondo }} edges={['top', 'left', 'right']}>
+      <StatusBar style="light" />
+      <View style={{ backgroundColor: colores.institucional, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#fff' }}>ReservaITN</Text>
+          <Text style={{ color: '#c7d2e8', fontSize: 12 }}>{sesion.usuario.nombre}</Text>
+        </View>
+        <Pressable onPress={async () => { await guardarSesion(null); setSesion(null); }} hitSlop={10}>
+          <Text style={{ color: '#fff' }}>Salir</Text>
+        </Pressable>
       </View>
+
       <View style={{ flex: 1 }}>
-        {pestana === 'reservar' && <Disponibilidad />}
-        {pestana === 'avisos' && <Notificaciones />}
+        {pestana === 'reservar' && <Reservar alReservar={() => setVersion((v) => v + 1)} />}
+        {pestana === 'mias' && <MisReservas abrirEscaner={() => setEscaner(true)} version={version} />}
+        {pestana === 'inventario' && <Inventario />}
         {pestana === 'danio' && <ReporteDanio />}
+        {pestana === 'avisos' && <Notificaciones alLeer={contarAvisos} version={version} />}
       </View>
-      <View style={{ flexDirection: 'row', gap: 8, padding: 12 }}>
-        {pestanas.map(([id, titulo]) => (
-          <View key={id} style={{ flex: 1 }}>
-            <Boton titulo={titulo} secundario={pestana !== id} onPress={() => setPestana(id)} />
-          </View>
-        ))}
-      </View>
+
+      <SafeAreaView edges={['bottom']} style={{ backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: colores.borde }}>
+        <View style={{ flexDirection: 'row' }}>
+          {pestanas.map((p) => (
+            <Pressable key={p.id} onPress={() => { setPestana(p.id); if (p.id === 'avisos') contarAvisos(); }} style={{ flex: 1, paddingVertical: 12, alignItems: 'center', borderTopWidth: 3, borderTopColor: pestana === p.id ? colores.acento : 'transparent' }}>
+              <Text style={{ fontSize: 13, fontWeight: pestana === p.id ? '700' : '500', color: pestana === p.id ? colores.acento : colores.suave }}>{p.texto}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </SafeAreaView>
+
+      <EscanerQR visible={escaner} onCerrar={() => setEscaner(false)} onListo={() => setVersion((v) => v + 1)} />
     </SafeAreaView>
   );
 }

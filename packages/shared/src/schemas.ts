@@ -158,6 +158,22 @@ export const cancelacionSchema = z.object({
 export const MOTIVO_MINIMO = 5;
 export const checkInSchema = z.object({ token: z.string().regex(/^[0-9a-f]{32}$/, 'Código QR inválido') });
 
+/** Contenido del QR de cada espacio. El prefijo distingue nuestros códigos de cualquier otro QR. */
+export const PREFIJO_QR = 'reservaitn:checkin:';
+export const contenidoQr = (token: string) => `${PREFIJO_QR}${token}`;
+/** Extrae el código de un QR escaneado; null si no es un QR de ReservaITN. */
+export function tokenDesdeQr(texto: string): string | null {
+  const t = texto.trim();
+  const token = t.startsWith(PREFIJO_QR) ? t.slice(PREFIJO_QR.length) : t;
+  return /^[0-9a-f]{32}$/.test(token) ? token : null;
+}
+
+/** Registro del celular para notificaciones push (token de Expo). */
+export const dispositivoSchema = z.object({
+  token: z.string().regex(/^(Exponent|Expo)PushToken\[[^\]]+\]$/, 'Token de notificaciones inválido'),
+  plataforma: z.enum(['ANDROID', 'IOS']),
+});
+
 export const rangoFechasSchema = z
   .object({ desde: z.coerce.date(), hasta: z.coerce.date(), sedeId: z.string().uuid().optional() })
   .refine((r) => r.hasta > r.desde, { message: '"hasta" debe ser posterior a "desde"', path: ['hasta'] });

@@ -1,4 +1,7 @@
-import { Controller, Get, Global, Injectable, Module, Param, ParseUUIDPipe, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Global, Injectable, Module, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { z } from 'zod';
+import { dispositivoSchema } from '@reservaitn/shared';
+import { ZodPipe } from '../comun/zod.pipe';
 import { PrismaService, type Tx } from '../comun/prisma.service';
 import { UsuarioActual, type UsuarioSesion } from '../comun/auth.guard';
 import { EnviosService } from './envios.service';
@@ -60,6 +63,25 @@ class NotificacionesController {
       orderBy: { creado_en: 'desc' },
       take: 50,
     });
+  }
+
+  @Get('no-leidas')
+  async noLeidas(@UsuarioActual() u: UsuarioSesion) {
+    return { total: await this.prisma.notificacion.count({ where: { usuario_id: u.id, leida_en: null } }) };
+  }
+
+  /**
+   * Registra el celular para recibir notificaciones push. Si el mismo celular se usó con otra
+   * cuenta, pasa a la cuenta actual (un token = un dispositivo).
+   */
+  @Post('dispositivos')
+  async registrarDispositivo(@Body(new ZodPipe(dispositivoSchema)) d: z.infer<typeof dispositivoSchema>, @UsuarioActual() u: UsuarioSesion) {
+    await this.prisma.dispositivo.upsert({
+      where: { token_push: d.token },
+      create: { usuario_id: u.id, token_push: d.token, plataforma: d.plataforma },
+      update: { usuario_id: u.id, plataforma: d.plataforma, ultimo_uso: new Date() },
+    });
+    return { registrado: true };
   }
 
   @Patch(':id/leida')

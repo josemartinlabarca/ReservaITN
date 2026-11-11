@@ -1,56 +1,73 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { ScrollView } from 'react-native';
 import { reporteDanioSchema } from '@reservaitn/shared';
-import { api } from '../api';
-import { Boton, Campo, Tarjeta, colores } from '../ui';
+import { api, post } from '../api';
+import { Aviso, Boton, Campo, Etiqueta, Fichas, Titulo } from '../ui';
 
-interface Sala { id: string; codigo: string; nombre: string; edificio: { sede: { nombre: string } } }
-const SEVERIDADES = ['BAJA', 'MEDIA', 'ALTA'] as const;
+interface Espacio { id: string; codigo: string; nombre: string }
+interface ItemEsperado { item: { id: string; nombre: string } }
+const SEVERIDADES = [
+  { valor: 'BAJA' as const, texto: 'Baja' },
+  { valor: 'MEDIA' as const, texto: 'Media' },
+  { valor: 'ALTA' as const, texto: 'Alta (impide usar la sala)' },
+];
 
 /**
- * App de aseo y mantención (WBS 1.4.10 / R17 / E12): reporte de daños por sala.
- * Interfaz deliberadamente simple (riesgo de brecha digital, ver Registro de Interesados I5).
- * TODO sprint 4: conteo de inventario y foto con expo-image-picker.
+ * Reporte de daños (R17 / E12): sala, ítem dañado (opcional), gravedad y descripción. Llega a
+ * Operaciones como aviso y queda en la bandeja de daños para crear la orden de trabajo.
+ * Interfaz simple a propósito (riesgo de brecha digital del personal, interesado I5).
  */
 export function ReporteDanio() {
-  const [salas, setSalas] = useState<Sala[]>([]);
-  const [sala, setSala] = useState<Sala | null>(null);
-  const [severidad, setSeveridad] = useState<(typeof SEVERIDADES)[number]>('MEDIA');
+  const [espacios, setEspacios] = useState<Espacio[]>([]);
+  const [espacioId, setEspacioId] = useState<string | null>(null);
+  const [items, setItems] = useState<ItemEsperado[]>([]);
+  const [itemId, setItemId] = useState<string | null>(null);
+  const [severidad, setSeveridad] = useState<'BAJA' | 'MEDIA' | 'ALTA'>('MEDIA');
   const [descripcion, setDescripcion] = useState('');
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
+  const [enviando, setEnviando] = useState(false);
 
-  useEffect(() => { api<Sala[]>('/espacios').then(setSalas).catch(() => setSalas([])); }, []);
+  useEffect(() => {
+    api<Espacio[]>('/espacios').then(setEspacios).catch((e) => setMsg({ ok: false, texto: (e as Error).message }));
+  }, []);
+  useEffect(() => {
+    setItemId(null);
+    if (espacioId) api<ItemEsperado[]>(`/mantencion/espacios/${espacioId}/inventario`).then(setItems).catch(() => setItems([]));
+  }, [espacioId]);
 
   async function enviar() {
-    const datos = { espacioId: sala?.id ?? '', descripcion, severidad };
+    const datos = { espacioId: espacioId ?? '', itemId: itemId ?? undefined, descripcion, severidad };
     const v = reporteDanioSchema.safeParse(datos);
-    if (!v.success) return setMsg({ ok: false, texto: sala ? v.error.issues[0].message : 'Elija una sala' });
+    if (!v.success) return setMsg({ ok: false, texto: espacioId ? v.error.issues[0].message : 'Elige la sala' });
+    setEnviando(true);
     try {
-      await api('/mantencion/danios', { method: 'POST', body: JSON.stringify(datos) });
-      setMsg({ ok: true, texto: 'Reporte enviado al encargado de operaciones' });
+      await post('/mantencion/danios', datos);
+      setMsg({ ok: true, texto: '✓ Reporte enviado al encargado de operaciones.' });
       setDescripcion('');
+      setItemId(null);
     } catch (e) {
       setMsg({ ok: false, texto: (e as Error).message });
+    } finally {
+      setEnviando(false);
     }
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <Text style={{ fontWeight: '700' }}>1. Sala</Text>
-      {salas.map((s) => (
-        <Boton key={s.id} titulo={`${s.codigo} · ${s.edificio.sede.nombre}`} secundario={sala?.id !== s.id} onPress={() => setSala(s)} />
-      ))}
-      <Text style={{ fontWeight: '700' }}>2. Gravedad</Text>
-      {SEVERIDADES.map((x) => (
-        <Boton key={x} titulo={x} secundario={severidad !== x} onPress={() => setSeveridad(x)} />
-      ))}
-      <Campo etiqueta="3. ¿Qué pasó?" value={descripcion} onChangeText={setDescripcion} multiline />
-      <Boton titulo="Enviar reporte" onPress={enviar} />
-      {msg && (
-        <Tarjeta>
-          <Text style={{ color: msg.ok ? colores.ok : colores.error }}>{msg.texto}</Text>
-        </Tarjeta>
+    <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }} keyboardShouldPersistTaps="handled">
+      <Titulo>Reportar daño</Titulo>
+      <Etiqueta>1. Sala</Etiqueta>
+      <Fichas opciones={espacios.map((e) => ({ valor: e.id, texto: e.codigo }))} valor={espacioId} onCambio={setEspacioId} />
+      {items.length > 0 && (
+        <>
+          <Etiqueta>2. ¿Qué está dañado? (opcional)</Etiqueta>
+          <Fichas opciones={items.map((i) => ({ valor: i.item.id, texto: i.item.nombre }))} valor={itemId} onCambio={setItemId} />
+        </>
       )}
+      <Etiqueta>3. Gravedad</Etiqueta>
+      <Fichas opciones={SEVERIDADES} valor={severidad} onCambio={setSeveridad} />
+      <Campo etiqueta="4. ¿Qué pasó?" value={descripcion} onChangeText={setDescripcion} multiline placeholder="Ej. el proyector no enciende" />
+      <Boton titulo="Enviar reporte" onPress={enviar} cargando={enviando} />
+      {msg && <Aviso ok={msg.ok} texto={msg.texto} />}
     </ScrollView>
   );
 }

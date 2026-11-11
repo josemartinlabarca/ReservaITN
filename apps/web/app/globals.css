@@ -76,3 +76,10 @@ fieldset.grupo legend { color: var(--muted); font-size: 0.875rem; padding: 0 4px
 .campos > label, .campos > div { min-width: 0; }
 .campos input, .campos select, .campos textarea, label > textarea { width: 100%; min-width: 0; box-sizing: border-box; }
 .campos input[type=checkbox] { width: auto; }
+
+/* Al imprimir el QR, solo sale la hoja del código */
+@media print {
+  body * { visibility: hidden; }
+  .imprimible, .imprimible * { visibility: visible; }
+  .imprimible { position: absolute; inset: 0; padding: 2cm; color: #000; }
+}

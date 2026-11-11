@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { ROLES, espacioCreateSchema, espacioUpdateSchema, usuarioCreateSchema, usuarioUpdateSchema, type Rol } from '@reservaitn/shared';
+import QRCode from 'qrcode';
 import { Encabezado } from '../Encabezado';
 import { api, sesion } from '@/lib/api';
 
@@ -85,6 +86,7 @@ function AdminEspacios() {
   const [tipos, setTipos] = useState<Catalogo[]>([]);
   const [items, setItems] = useState<Catalogo[]>([]);
   const [editando, setEditando] = useState<Espacio | 'nuevo' | null>(null);
+  const [qr, setQr] = useState<Espacio | null>(null);
   const [aviso, setAviso] = useState('');
   const cargar = useCallback(() => api<Espacio[]>('/espacios?todos=true').then(setEspacios), []);
 
@@ -120,12 +122,16 @@ function AdminEspacios() {
                     : !e.reservable ? <span className="estado estado-PENDIENTE">No reservable</span>
                     : <span className="estado estado-APROBADA">Activo</span>}
                 </td>
-                <td><button className="sec chico" onClick={() => setEditando(e)}>Editar</button></td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  <button className="sec chico" onClick={() => setEditando(e)}>Editar</button>{' '}
+                  <button className="sec chico" onClick={() => setQr(e)} title="Código QR para el check-in">QR</button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {qr && <CodigoQr espacio={qr} onCerrar={() => setQr(null)} />}
       {editando && (
         <FormEspacio
           espacio={editando === 'nuevo' ? null : editando}
@@ -137,6 +143,53 @@ function AdminEspacios() {
         />
       )}
     </section>
+  );
+}
+
+/**
+ * QR de check-in del espacio (D15): se imprime y se pega en la puerta. Al llegar, quien reservó lo
+ * escanea con la app. Regenerarlo invalida el impreso anterior.
+ */
+function CodigoQr({ espacio, onCerrar }: { espacio: Espacio; onCerrar: () => void }) {
+  const [imagen, setImagen] = useState('');
+  const [error, setError] = useState('');
+
+  const mostrar = useCallback(async (ruta: string, init?: RequestInit) => {
+    try {
+      const r = await api<{ contenido: string }>(ruta, init);
+      setImagen(await QRCode.toDataURL(r.contenido, { width: 360, margin: 1, errorCorrectionLevel: 'M' }));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, []);
+
+  useEffect(() => {
+    mostrar(`/espacios/${espacio.id}/qr`);
+  }, [espacio.id, mostrar]);
+
+  function regenerar() {
+    if (window.confirm(`¿Generar un código nuevo para ${espacio.codigo}? El QR impreso actual dejará de funcionar.`))
+      mostrar(`/espacios/${espacio.id}/qr/regenerar`, { method: 'POST', body: '{}' });
+  }
+
+  return (
+    <Dialogo titulo={`Código QR · ${espacio.codigo}`} onCerrar={onCerrar}>
+      <div className="imprimible" style={{ textAlign: 'center', display: 'grid', gap: 8, justifyItems: 'center' }}>
+        <div style={{ fontSize: '2rem', fontWeight: 700 }}>{espacio.codigo}</div>
+        <div>{espacio.nombre} · {espacio.edificio.sede.nombre}</div>
+        {imagen ? <img src={imagen} alt={`Código QR de ${espacio.codigo}`} width={300} height={300} style={{ background: '#fff', padding: 8, borderRadius: 8 }} /> : <p>Generando…</p>}
+        <p style={{ margin: 0, maxWidth: 420 }}>
+          Al llegar a su reserva, abra la app <strong>ReservaITN</strong> → <strong>Mis reservas</strong> → <strong>Hacer check-in</strong> y escanee este código.
+          Si no lo hace dentro de los primeros 15 minutos, la sala se libera para otros.
+        </p>
+      </div>
+      {error && <p className="error">{error}</p>}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem', flexWrap: 'wrap' }}>
+        <button className="sec" onClick={regenerar}>Regenerar código</button>
+        <button className="sec" onClick={onCerrar}>Cerrar</button>
+        <button onClick={() => window.print()} disabled={!imagen}>Imprimir</button>
+      </div>
+    </Dialogo>
   );
 }
 

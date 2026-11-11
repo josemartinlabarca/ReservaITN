@@ -109,3 +109,35 @@ describe('envío de correos (R6)', () => {
     expect(final).toMatchObject({ estado: 'FALLIDO', intentos: 1, ultimo_error: 'La persona no tiene correo registrado' });
   });
 });
+
+describe('notificaciones push (R6)', () => {
+  it('envía el aviso a los celulares del usuario por Expo y elimina los que ya no existen', async () => {
+    const dirInf = await sesion('dir.inf@itn.cl');
+    const sufijo = Date.now();
+    await prisma.dispositivo.createMany({
+      data: [
+        { usuario_id: dirInf.id, token_push: `ExponentPushToken[activo-${sufijo}]`, plataforma: 'ANDROID' },
+        { usuario_id: dirInf.id, token_push: `ExponentPushToken[viejo-${sufijo}]`, plataforma: 'IOS' },
+      ],
+    });
+    const enviados: unknown[] = [];
+    envios.usarFetch((async (_url: string, init: RequestInit) => {
+      const mensajes = JSON.parse(String(init.body)) as { to: string }[];
+      enviados.push(...mensajes);
+      return new Response(JSON.stringify({
+        data: mensajes.map((m) => (m.to.includes('viejo') ? { status: 'error', details: { error: 'DeviceNotRegistered' } } : { status: 'ok', id: 'x' })),
+      }), { status: 200 });
+    }) as typeof fetch);
+
+    const correo = await solicitudConAviso(3);
+    const push = await prisma.envio.findFirstOrThrow({ where: { canal: 'PUSH', notificacion_id: correo.notificacion_id } });
+    expect((await procesarHasta(push.id)).estado).toBe('ENVIADO');
+    expect(enviados).toEqual(expect.arrayContaining([
+      expect.objectContaining({ to: `ExponentPushToken[activo-${sufijo}]`, title: 'Nueva solicitud de reserva', sound: 'default' }),
+    ]));
+    // El celular que Expo ya no reconoce se elimina; el activo se conserva
+    const quedan = await prisma.dispositivo.findMany({ where: { usuario_id: dirInf.id, token_push: { contains: String(sufijo) } } });
+    expect(quedan.map((d) => d.token_push)).toEqual([`ExponentPushToken[activo-${sufijo}]`]);
+    await prisma.dispositivo.deleteMany({ where: { token_push: { contains: String(sufijo) } } });
+  });
+});

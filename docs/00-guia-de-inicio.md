@@ -259,31 +259,85 @@ curl -s localhost:3001/api/reservas -H "authorization: Bearer $TOKEN" -H 'conten
 
 ## Paso 9. App móvil en tu celular
 
-1. Averigua la **IP de tu computador** en la red WiFi: en Windows `ipconfig` (*Dirección IPv4*); en
-   macOS `ipconfig getifaddr en0`; en Linux `hostname -I`. Ejemplo: `192.168.1.10`.
-2. Crea `apps/mobile/.env` con esa IP (el celular no puede usar `localhost`, porque `localhost`
-   sería el propio celular):
+La app usa **Expo SDK 58** y se abre con **Expo Go**, sin instalar nada más en el celular.
+Necesitas el computador con los pasos 1 a 7 funcionando y el celular **en la misma red WiFi**.
+
+### 9.1 Preparar (una sola vez)
+
+1. Instala o **actualiza** Expo Go desde la App Store o Google Play. Debe ser la versión más
+   reciente: una antigua dirá que el proyecto es *incompatible*.
+2. Averigua la **IP de tu computador** en la red WiFi:
+   - Windows: `ipconfig` → bajo el adaptador *Wi-Fi*, la *Dirección IPv4* (ej. `192.168.1.10`).
+   - macOS: `ipconfig getifaddr en0`.
+3. Crea `apps/mobile/.env` a partir del ejemplo y pon tu IP. En Windows:
+
+   ```bash
+   copy apps\mobile\.env.example apps\mobile\.env
+   ```
+
+   ```bash
+   notepad apps\mobile\.env
+   ```
+
+   Debe quedar así, con **tu** IP (el celular no puede usar `localhost`, porque sería el propio celular):
 
    ```
    EXPO_PUBLIC_API_URL=http://192.168.1.10:3001/api
    ```
 
-3. Con `pnpm dev` corriendo en una terminal, abre **otra terminal** y ejecuta:
+4. **Prueba la conexión desde el celular.** Con `pnpm dev` corriendo, abre en el navegador del celular
+   `http://TU-IP:3001/api/health`. Debe responder `{"ok":true,...}`. Si no carga:
+   - Windows pregunta la primera vez si permite a *Node.js* usar la red: acepta **Redes privadas**.
+   - Si no preguntó: *Seguridad de Windows → Firewall y protección de red → Permitir una aplicación a
+     través del firewall* → marca **Node.js** en *Privada*.
+   - La red WiFi del computador debe estar como **Privada** (no *Pública*) en la configuración de Windows.
 
-   ```bash
-   pnpm dev:movil
-   ```
+### 9.2 Abrir la app
 
-4. Escanea el código QR: con la cámara en iPhone, o desde Expo Go en Android.
-5. El celular y el computador deben estar en la **misma red WiFi**. Si no conecta, permite el puerto
-   3001 en el firewall del computador (en Windows aparece un aviso la primera vez: acepta *redes privadas*).
+Con `pnpm dev` corriendo en una terminal, abre **otra** terminal y ejecuta:
 
-> **Versión de Expo.** La app usa el SDK 52 de Expo. La app Expo Go de las tiendas solo abre
-> proyectos con el SDK más reciente; si Expo Go dice que el proyecto es *incompatible*, hay que
-> actualizar el SDK (`npx expo install expo@latest --fix` dentro de `apps/mobile`) o usar una
-> *development build*. Avísale al equipo antes de actualizarlo, porque afecta a todos.
+```bash
+pnpm dev:movil
+```
 
----
+Aparece un código QR en la terminal. **Android:** ábrelo desde Expo Go (*Scan QR code*).
+**iPhone:** escanéalo con la cámara. La primera vez tarda un minuto en cargar.
+
+Si cambias `apps/mobile/.env`, detén `pnpm dev:movil` (Ctrl + C) y vuelve a ejecutarlo.
+Si el celular no logra abrir la app aunque la API responde (redes que bloquean conexiones entre equipos),
+usa un túnel: `pnpm --filter @reservaitn/mobile exec expo start --tunnel`.
+
+### 9.3 Qué probar (recorrido de 15 minutos)
+
+**Docente en el celular, aprobación en la web:**
+
+1. En el celular, entra como `docente@itn.cl` (contraseña `reservaitn`).
+2. **Reservar:** elige hoy, *Desde* = dentro de 5 minutos, *Hasta* = una hora después; 10 asistentes;
+   un motivo; **Buscar sala** → **Solicitar** en la sugerida. Queda *pendiente*.
+3. En el computador, entra a la web como `dir.inf@itn.cl` → **Aprobaciones** → **Aprobar**.
+4. En el celular, la pestaña **Avisos** muestra el aviso en hasta 30 segundos (y el correo llega a
+   Mailpit, http://localhost:8025). En **Mis reservas** la reserva aparece *Aprobada*.
+
+**Check-in con el código QR (R18):**
+
+5. En la web, entra como `subdireccion@itn.cl` → **Administración → Espacios** → botón **QR** de la sala
+   que reservaste. El código queda en la pantalla del computador.
+6. En el celular, **Mis reservas** → **Hacer check-in** → permite la cámara → apunta a la pantalla.
+   Debe decir *Check-in registrado* y la reserva muestra *✓ Check-in*. Si no hicieras el check-in,
+   la reserva se liberaría sola a los 15 minutos del inicio.
+
+**Personal de aseo:**
+
+7. **Salir** y entra como `aseo@itn.cl`. **Inventario:** elige A-101, quita dos sillas con **−** y
+   **Guardar conteo**: el sistema muestra la diferencia.
+8. **Daños:** elige una sala, el ítem, la gravedad y describe el daño → **Enviar reporte**.
+9. En la web, como `operaciones@itn.cl` → **Mantención**: el daño aparece para crear la orden de trabajo.
+
+### 9.4 Notificaciones push
+
+La app y la API ya envían push al celular, pero **Expo Go no las recibe** (Expo las quitó de Expo Go
+desde la SDK 53). Para probarlas hace falta una compilación propia de la app con EAS (pendiente; ver
+roadmap). Mientras tanto, los avisos llegan a la pestaña **Avisos** y por correo.
 
 ## Paso 10. Ejecutar las pruebas
 
@@ -368,6 +422,6 @@ pnpm db:seed
 | `La migración V00X cambió después de aplicarse` | Alguien editó una migración ya aplicada | No se editan migraciones: revertir el cambio y crear una nueva. En desarrollo, reiniciar la base |
 | La web dice *Credenciales inválidas* con los usuarios demo | No se cargaron los datos de demostración | `pnpm db:seed` |
 | La API falla con `Unknown field` o `Invalid prisma.… invocation` | Cliente de Prisma desactualizado tras una migración nueva | `pnpm --filter @reservaitn/api prisma:pull` |
-| La app móvil dice *Error de conexión* | Usa `localhost` o el firewall bloquea el puerto | Revisar `apps/mobile/.env` (paso 9) y el firewall |
-| Expo Go dice que el proyecto es incompatible | SDK de Expo distinto al de Expo Go | Ver la nota del paso 9 |
+| La app dice *No se pudo conectar con el servidor* | `apps/mobile/.env` usa `localhost` u otra IP, el firewall bloquea Node.js, o el celular está en otra red | Paso 9.1: probar `http://TU-IP:3001/api/health` desde el navegador del celular |
+| Expo Go dice que el proyecto es incompatible | Expo Go desactualizado (el proyecto usa la SDK 58) | Actualizar Expo Go desde la tienda |
 | Los correos no llegan a Mailpit (http://localhost:8025) | Mailpit no está corriendo, falta `SMTP_URL` en `apps/api/.env`, o el despachador aún no hace su vuelta (cada 15 s) | `docker ps` debe mostrar `reservaitn-mail-1`; revisa `SMTP_URL`. El estado de cada correo está en `comunicacion.envio` (`PENDIENTE`, `ENVIADO`, `FALLIDO` con `ultimo_error`) |
