@@ -56,7 +56,12 @@ export async function api<T>(ruta: string, init: RequestInit = {}): Promise<T> {
       },
     });
   } catch {
-    throw new ErrorApi(0, 'No se pudo conectar con la API. ¿Está corriendo en el puerto 3001?');
+    throw new ErrorApi(
+      0,
+      BASE.includes('localhost')
+        ? 'No se pudo conectar con la API. ¿Está corriendo en el puerto 3001?'
+        : 'No se pudo conectar con el servidor. Si es la primera visita del día, espere un minuto mientras despierta y vuelva a intentar.',
+    );
   }
   const body = await res.json().catch(() => ({}));
   if (res.status === 401 && s) {
