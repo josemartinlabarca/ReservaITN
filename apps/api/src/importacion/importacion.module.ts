@@ -42,7 +42,13 @@ class ImportacionController {
   @Get()
   historial() {
     return this.prisma.$queryRaw`
-      SELECT * FROM reservas.v_importacion_resumen ORDER BY creado_en DESC LIMIT 20`;
+      SELECT r.id, r.archivo_nombre, r.creado_en, r.total_filas, r.filas_ok, r.proporcion_ok::float AS proporcion_ok,
+             pa.codigo AS periodo, p.nombres || ' ' || p.apellido_paterno AS responsable
+        FROM reservas.v_importacion_resumen r
+        JOIN academico.periodo_academico pa ON pa.id = r.periodo_id
+        JOIN seguridad.usuario u ON u.id = r.usuario_id
+        JOIN seguridad.persona p ON p.id = u.persona_id
+       ORDER BY r.creado_en DESC LIMIT 20`;
   }
 }
 

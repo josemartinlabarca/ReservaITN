@@ -2,8 +2,8 @@
 import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { HORARIO } from '@reservaitn/shared';
-import { Encabezado } from '../Encabezado';
 import { api, sesion } from '@/lib/api';
+import { Cabecera } from '@/components/ui';
 
 interface Espacio {
   id: string;
@@ -85,8 +85,7 @@ export default function Calendario() {
 
   return (
     <>
-      <Encabezado />
-      <main style={{ display: 'grid', gap: '1rem' }}>
+      <Cabecera miga="Reservas" titulo="Calendario y disponibilidad" sub="Ocupación semanal de cada sala; haga clic en un horario libre para reservarlo (R3)." />
         <section className="card" style={{ display: 'grid', gap: '0.75rem' }}>
           <div className="fila-controles">
             <label style={{ flex: '1 1 280px' }}>
@@ -177,7 +176,6 @@ export default function Calendario() {
             </p>
           </section>
         )}
-      </main>
     </>
   );
 }

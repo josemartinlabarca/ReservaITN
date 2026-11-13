@@ -52,7 +52,7 @@ export class NotificacionesService {
 }
 
 @Controller('notificaciones')
-class NotificacionesController {
+export class NotificacionesController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get('mias')
@@ -82,6 +82,12 @@ class NotificacionesController {
       update: { usuario_id: u.id, plataforma: d.plataforma, ultimo_uso: new Date() },
     });
     return { registrado: true };
+  }
+
+  /** Marca como leídos todos los avisos del usuario (botón "Marcar todo como leído"). */
+  @Patch('leidas')
+  todasLeidas(@UsuarioActual() u: UsuarioSesion) {
+    return this.prisma.notificacion.updateMany({ where: { usuario_id: u.id, leida_en: null }, data: { leida_en: new Date() } });
   }
 
   @Patch(':id/leida')

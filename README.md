@@ -115,4 +115,7 @@ Usuarios demo (contraseña `reservaitn`), todos `@itn.cl`:
 6. [Matriz de trazabilidad R1–R19](docs/06-trazabilidad.md)
 7. [Estrategia de pruebas](docs/07-pruebas.md)
 8. [Despliegue](docs/08-despliegue.md)
-9. [Decisiones de arquitectura (ADR)](docs/adr/)
+9. [Web: pantallas y diseño](docs/09-web.md)
+10. [Decisiones de arquitectura (ADR)](docs/adr/)
+
+Registro de cambios: [CHANGELOG.md](CHANGELOG.md).

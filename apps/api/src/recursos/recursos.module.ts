@@ -57,12 +57,14 @@ class RecursosController {
 
   @Get('catalogos')
   async catalogos() {
-    const [tiposEspacio, tiposActividad, items] = await Promise.all([
+    const [tiposEspacio, tiposActividad, items, periodos] = await Promise.all([
       this.prisma.tipo_espacio.findMany({ where: { activo: true }, orderBy: { nombre: 'asc' } }),
       this.prisma.tipo_actividad.findMany({ where: { activo: true }, orderBy: { nombre: 'asc' } }),
       this.prisma.item.findMany({ where: { activo: true }, orderBy: { nombre: 'asc' } }),
+      // Períodos abiertos, para elegir a cuál se importa la planificación (R9)
+      this.prisma.periodo_academico.findMany({ where: { estado: { not: 'CERRADO' } }, orderBy: { fecha_inicio: 'asc' } }),
     ]);
-    return { tiposEspacio, tiposActividad, items };
+    return { tiposEspacio, tiposActividad, items, periodos };
   }
 
   /** Contenido del QR de check-in del espacio (D15), para mostrarlo o imprimirlo. */

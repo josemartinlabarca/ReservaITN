@@ -1,8 +1,9 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { HORARIO, reservaCreateSchema } from '@reservaitn/shared';
-import { Encabezado } from '../Encabezado';
 import { api } from '@/lib/api';
+import { Cabecera } from '@/components/ui';
+import { ConPermiso } from '@/components/Panel';
 
 interface Espacio {
   id: string;
@@ -55,7 +56,7 @@ const ESTADOS: Record<string, string> = {
  * los minutos de inicio y de término son libres, dentro del horario institucional.
  * Valida con el mismo esquema que la API (packages/shared) antes de enviar.
  */
-export default function Reservar() {
+function Reservar() {
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [actividades, setActividades] = useState<TipoActividad[]>([]);
   const [form, setForm] = useState({
@@ -193,8 +194,7 @@ export default function Reservar() {
 
   return (
     <>
-      <Encabezado />
-      <main style={{ display: 'grid', gap: '1rem' }}>
+      <Cabecera miga="Reservas" titulo="Nueva reserva" sub="Elija día y hora al minuto; el sistema impide choques y sugiere salas (R1, R10)." />
         <form className="card" onSubmit={enviar} style={{ display: 'grid', gap: '1rem' }}>
           <h2 style={{ margin: 0 }}>Nueva reserva</h2>
 
@@ -329,7 +329,10 @@ export default function Reservar() {
             </table>
           )}
         </section>
-      </main>
     </>
   );
+}
+
+export default function Pagina() {
+  return <ConPermiso permiso="reserva:solicitar"><Reservar /></ConPermiso>;
 }

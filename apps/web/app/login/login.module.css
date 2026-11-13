@@ -1,0 +1,465 @@
+/* Estilos EXCLUSIVOS del login de ReservaITN. */
+
+.paginaLogin {
+  display: grid;
+  grid-template-columns: 55% 45%;
+  min-height: 100dvh;
+  background: #f2f5fb;
+  font-family: var(--font, Arial, sans-serif);
+}
+
+/* PANEL IZQUIERDO: FOTOGRAFÍA INSTITUCIONAL */
+
+.panelCampus {
+  min-height: 100dvh;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #123466;
+}
+
+.fotoCampus {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: url('/itn-campus.png');
+  background-size: cover;
+  background-position: left center;
+  background-repeat: no-repeat;
+}
+
+/* Franja inferior del campus */
+
+.cintaCampus {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  min-height: 175px;
+  padding: 48px 5% 28px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: end;
+  gap: 12px;
+  color: white;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(11, 38, 81, .94) 38%,
+    #102e5e
+  );
+}
+
+.cintaCampus::before {
+  content: '';
+  position: absolute;
+  inset: -24px 0 auto;
+  height: 65px;
+  transform: skewY(-4deg);
+  background: linear-gradient(
+    135deg,
+    transparent 12%,
+    #102e5e 12%
+  );
+  z-index: -1;
+}
+
+.valor {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
+  font-weight: 650;
+  font-size: .82rem;
+  line-height: 1.3;
+  min-height: 75px;
+  border-right: 1px solid rgba(255, 255, 255, .25);
+}
+
+.valor:last-child {
+  border-right: none;
+}
+
+.valor svg {
+  width: 29px;
+  height: 29px;
+}
+
+/* PANEL DERECHO: ACCESO */
+
+.panelAcceso {
+  position: relative;
+  min-width: 0;
+  padding: 36px 6%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(
+    155deg,
+    #f8fbff 4%,
+    #eef3fa 68%,
+    #e4edf9
+  );
+}
+
+.panelAcceso::before {
+  content: '';
+  position: absolute;
+  left: -28px;
+  top: -10%;
+  height: 120%;
+  width: 65px;
+  transform: rotate(10deg);
+  background: #fff;
+}
+
+.adornoSuperior {
+  position: absolute;
+  width: 250px;
+  height: 160px;
+  background: #12376d;
+  right: -85px;
+  top: -88px;
+  transform: rotate(-44deg);
+}
+
+/* TARJETA DEL LOGIN */
+
+.tarjeta {
+  width: min(545px, 100%);
+  position: relative;
+  z-index: 1;
+  padding: clamp(25px, 3vw, 48px);
+  border-radius: 38px;
+  background: #fff;
+  box-shadow: 0 22px 75px rgba(23, 56, 108, .15);
+  color: #132b50;
+}
+
+/* ENCABEZADO Y LOGOTIPO */
+
+.encabezado {
+  text-align: center;
+}
+
+.marca {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 7px;
+}
+
+.nombreInstituto {
+  border-left: 2px solid #173963;
+  padding-left: 14px;
+  line-height: 1.13;
+  font-weight: 750;
+  font-size: clamp(14px, 1.2vw, 19px);
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: -.03em;
+}
+
+.lema {
+  font-size: .59rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .22em;
+  padding-top: 10px;
+  margin: 12px auto 32px;
+  border-top: 2px solid #12376d;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.encabezado h1 {
+  font-size: clamp(1.55rem, 2.1vw, 2.2rem);
+  line-height: 1.25;
+  color: #132b50;
+  font-weight: 800;
+}
+
+.encabezado h1 span {
+  color: #e8a300;
+}
+
+.encabezado p {
+  margin: 8px 0 30px;
+  color: #586d8b;
+  font-size: 1rem;
+}
+
+/* FORMULARIO */
+
+.formulario {
+  display: grid;
+  gap: 19px;
+  width: 100%;
+}
+
+.grupoCampo {
+  display: grid;
+  gap: 8px;
+}
+
+.grupoCampo label {
+  font-weight: 650;
+  color: #152d51;
+  font-size: .92rem;
+}
+
+.campoConIcono {
+  display: flex;
+  align-items: center;
+  position: relative;
+  border: 1px solid #b8c7db;
+  border-radius: 12px;
+  padding-left: 15px;
+  background: #fff;
+  color: #284973;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.campoConIcono:focus-within {
+  border-color: #275b9d;
+  box-shadow: 0 0 0 3px rgba(39, 91, 157, .13);
+}
+
+.campoConIcono input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  padding: 0 13px;
+  font-size: .94rem;
+  background: transparent;
+  color: #132b50;
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}
+
+.campoConIcono input:focus {
+  box-shadow: none;
+  border: none;
+  outline: none;
+}
+
+.campoConIcono input::placeholder {
+  color: #74829a;
+}
+
+/* MOSTRAR Y OCULTAR CONTRASEÑA */
+
+.verPassword {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin-right: 4px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #415b7e;
+  cursor: pointer;
+}
+
+.verPassword:hover {
+  background: #edf2fa;
+  color: #122f5b;
+}
+
+/* BOTÓN INICIAR SESIÓN */
+
+.botonIngresar {
+  margin-top: 6px;
+  display: flex;
+  width: 100%;
+  min-height: 55px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 0;
+  border-radius: 14px;
+  background: #143c77;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, transform .15s;
+}
+
+.botonIngresar:hover:not(:disabled) {
+  background: #0d2e60;
+  transform: translateY(-1px);
+}
+
+.botonIngresar:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
+/* MENSAJES DE ERROR */
+
+.errorLogin {
+  background: #fff1ef;
+  color: #9e2925;
+  border: 1px solid #f6cbc7;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: .87rem;
+}
+
+/* CUENTAS DE DEMOSTRACIÓN */
+
+.demo {
+  padding-top: 26px;
+  margin-top: 28px;
+  border-top: 1px solid #dbe4f1;
+  text-align: center;
+}
+
+.demo p {
+  color: #5a6b84;
+  font-size: .8rem;
+  margin-bottom: 15px;
+}
+
+.chipsDemo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.chipDemo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #c4d1e2;
+  border-radius: 999px;
+  background: #fff;
+  color: #19345a;
+  font-size: .76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chipDemo svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chipDemo:hover,
+.chipActivo {
+  background: #eaf1fc;
+  border-color: #7e9bc4;
+}
+
+/* RESPONSIVE: TABLETS */
+
+@media (max-width: 1100px) {
+  .paginaLogin {
+    grid-template-columns: 48% 52%;
+  }
+
+  .tarjeta {
+    padding: 30px;
+  }
+
+  .panelAcceso {
+    padding: 30px 5%;
+  }
+
+  .fotoCampus {
+    background-position: left center;
+  }
+}
+
+/* RESPONSIVE: CELULARES */
+
+@media (max-width: 760px) {
+  .paginaLogin {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panelCampus {
+    min-height: 210px;
+    height: 210px;
+  }
+
+  .fotoCampus {
+    background-position: 18% 42%;
+  }
+
+  .cintaCampus {
+    min-height: 65px;
+    padding: 12px 5%;
+  }
+
+  .cintaCampus::before {
+    display: none;
+  }
+
+  .valor {
+    font-size: .65rem;
+    min-height: 48px;
+    gap: 4px;
+  }
+
+  .valor svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .panelAcceso {
+    flex: 1;
+    padding: 25px 15px 40px;
+  }
+
+  .panelAcceso::before,
+  .adornoSuperior {
+    display: none;
+  }
+
+  .tarjeta {
+    border-radius: 23px;
+    max-width: 510px;
+    padding: 26px 18px;
+  }
+
+  .lema {
+    margin-bottom: 23px;
+  }
+}
+
+/* CELULARES PEQUEÑOS */
+
+@media (max-width: 390px) {
+  .valor {
+    font-size: .56rem;
+  }
+
+  .chipDemo {
+    padding: 7px 10px;
+  }
+
+  .nombreInstituto {
+    font-size: 13px;
+  }
+}
+
+/* ACCESIBILIDAD */
+
+@media (prefers-reduced-motion: reduce) {
+  .botonIngresar,
+  .campoConIcono {
+    transition: none;
+  }
+}

@@ -1,0 +1,68 @@
+/* Estilos exclusivos de la página de inicio. No modifican globals.css. */
+.inicio { display:grid; gap:20px; min-width:0; width:100%; }
+.bienvenida { position:relative; min-height:226px; display:flex; align-items:center; overflow:hidden; padding:30px clamp(22px,3.3vw,46px); border-radius:19px; color:#fff; background:linear-gradient(105deg,#10346f,#184f9b); box-shadow:0 14px 35px rgba(5,18,49,.18); isolation:isolate; }
+.bienvenida::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg,#10346f 0%,#10346f 43%,rgba(16,52,111,.88) 60%,rgba(16,52,111,.05) 100%); z-index:1; }
+.bienvenidaTexto { position:relative; z-index:2; max-width:68%; }
+.sobretitulo { color:#ffbb36; font-size:.77rem; font-weight:800; letter-spacing:.095em; }
+.bienvenida h1 { margin:12px 0 7px; font-size:clamp(1.55rem,2.7vw,2.35rem); font-weight:800; line-height:1.15; color:white; }
+.bienvenida p { font-size:.95rem; color:#d8e6ff; max-width:48ch; }
+.etiquetas { display:flex; flex-wrap:wrap; gap:9px; margin-top:20px; }
+.etiquetas span { display:inline-flex; align-items:center; gap:7px; background:rgba(110,163,230,.23); border:1px solid rgba(190,215,255,.13); border-radius:999px; padding:7px 13px; color:#eef5ff; font-size:.8rem; font-weight:650; text-transform:capitalize; }
+.imagenBienvenida { position:absolute; right:0; top:0; bottom:0; width:49%; z-index:0; background:url('/itn-campus.png') left 35% / cover no-repeat; }
+.accesos { display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:11px; }
+.acceso { display:flex; gap:12px; align-items:center; min-width:0; padding:17px 15px; border:1px solid #2a4774; background:linear-gradient(145deg,#183665,#10213f); color:#fff; border-radius:15px; transition:transform .15s,border-color .15s,box-shadow .15s; }
+.acceso:hover { color:#fff; text-decoration:none; border-color:#6c97d7; transform:translateY(-2px); box-shadow:0 12px 25px rgba(0,0,0,.16); }
+.accesoDestacado { border:2px solid #f5b324; padding:16px 14px; }
+.iconoAcceso { display:grid; place-items:center; flex:none; width:46px; height:46px; border-radius:12px; background:#234779; color:#abcfff; }
+.accesoDestacado .iconoAcceso { background:#4b3b1b; color:#ffbd36; }
+.textoAcceso { display:grid; gap:3px; min-width:0; }
+.textoAcceso strong { font-size:.9rem; line-height:1.3; }
+.textoAcceso small { font-size:.75rem; line-height:1.4; color:#afc5e7; }
+.flecha { margin-left:auto; color:#ffbb36; font-size:1.5rem; font-weight:800; }
+.indicadores { display:flex; flex-wrap:wrap; overflow:hidden; gap:0; border:1px solid #2b4772; border-radius:16px; background:linear-gradient(125deg,#173561,#10213f); }
+.indicador { display:flex; align-items:center; gap:14px; min-width:180px; flex:1; padding:18px 22px; color:#fff; border-right:1px solid #36517b; }
+.indicador:last-child { border-right:none; }
+.indicador:hover { background:rgba(255,255,255,.06); text-decoration:none; color:#fff; }
+.iconoIndicador { display:grid; place-items:center; width:47px; height:47px; flex:none; border-radius:12px; background:#244576; color:#c9deff; }
+.indicador > span:last-child { display:grid; gap:3px; }
+.indicador small { color:#c2d3ea; font-size:.79rem; }
+.indicador strong { color:#fff; font-size:1.65rem; line-height:1.15; }
+.columnas { display:grid; grid-template-columns:1.15fr 1fr; align-items:stretch; gap:18px; }
+.unaColumna { grid-template-columns:1fr; }
+.panel { min-width:0; min-height:240px; background:linear-gradient(145deg,#142d54,#0f203c); border:1px solid #2a4570; border-radius:16px; padding:20px 22px; color:#fff; }
+.cabeceraPanel { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:17px; }
+.tituloPanel { display:flex; align-items:center; gap:11px; min-width:0; }
+.tituloPanel h2 { color:#fff; font-size:1.03rem; }
+.iconoTitulo { color:#f6b62f; display:grid; place-items:center; }
+.cabeceraPanel a { color:#a5ceff; font-size:.78rem; white-space:nowrap; }
+.cabeceraPanel a:hover { color:#fff; }
+.listaReservas,.listaAvisos { list-style:none; padding:0; margin:0; display:grid; gap:10px; }
+.reserva { display:flex; min-width:0; gap:16px; align-items:center; background:#1d3a67; padding:14px; border-radius:13px; }
+.fechaReserva { display:grid; place-items:center; align-content:center; gap:2px; width:69px; min-height:79px; flex:none; background:#254b7f; border-radius:11px; }
+.fechaReserva span { color:#cfe0fa; font-size:.75rem; font-weight:750; }
+.fechaReserva strong { color:#ffbd39; font-size:1.8rem; line-height:1; }
+.detalleReserva { min-width:0; display:grid; gap:4px; }
+.encabezadoReserva { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.encabezadoReserva strong { color:#fff; }
+.detalleReserva small,.detalleReserva p { color:#cfdbf0; font-size:.79rem; }
+.detalleReserva p { overflow-wrap:anywhere; }
+.soloLectores { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.vacio { padding:14px 0; }
+.sinAvisos { min-height:175px; display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center; text-align:center; }
+.campanaVacia { display:grid; place-items:center; width:56px; height:56px; border-radius:50%; color:#a6c8ff; background:#234576; }
+.sinAvisos strong { color:#fff; }
+.sinAvisos p { color:#b6c7df; font-size:.82rem; max-width:36ch; }
+.listaAvisos li { display:grid; gap:5px; background:#1b365f; border-radius:11px; padding:13px 15px; }
+.avisoTitulo { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.listaAvisos p,.listaAvisos small { font-size:.8rem; color:#c3d3e9; }
+.disponibilidad { display:flex; gap:20px; align-items:center; background:linear-gradient(115deg,#173763,#10213d); color:#fff; border:1px solid #2c4a78; padding:22px 26px; border-radius:16px; }
+.disponibilidadIcono { display:grid; place-items:center; flex:none; width:58px; height:58px; border-radius:13px; background:#234a80; color:#ffbf3a; }
+.disponibilidad > div:nth-child(2) { flex:1; }
+.disponibilidad h2 { font-size:1.02rem; color:#fff; margin:0 0 5px; }
+.disponibilidad p { color:#b9cde8; font-size:.82rem; }
+.disponibilidad a { display:inline-flex; align-items:center; justify-content:center; gap:9px; white-space:nowrap; padding:10px 17px; background:transparent; border:1px solid #f5b52b; border-radius:999px; color:#ffc34a; font-weight:750; font-size:.82rem; }
+.disponibilidad a:hover { background:#f5b52b; color:#0c2345; text-decoration:none; }
+@media(max-width:1000px) { .bienvenidaTexto { max-width:75%; } .columnas { grid-template-columns:1fr; } }
+@media(max-width:700px) { .inicio { gap:14px; } .bienvenida { min-height:235px; padding:24px 20px; } .bienvenidaTexto { max-width:100%; } .bienvenida::before { background:linear-gradient(90deg,rgba(16,52,111,.98),rgba(16,52,111,.76)); } .imagenBienvenida { width:100%; background-position:left 35%; } .bienvenida h1 { font-size:1.7rem; } .accesos { grid-template-columns:repeat(2,minmax(0,1fr)); } .acceso { padding:13px 10px; gap:8px; } .accesoDestacado { padding:12px 9px; } .iconoAcceso { width:37px; height:37px; } .textoAcceso strong { font-size:.8rem; } .textoAcceso small { font-size:.68rem; } .flecha { display:none; } .indicador { min-width:145px; padding:13px; gap:10px; } .indicador strong { font-size:1.35rem; } .iconoIndicador { width:38px; height:38px; } .panel { padding:17px 15px; } .disponibilidad { flex-wrap:wrap; padding:18px; gap:12px; } .disponibilidad a { width:100%; } }
+@media(max-width:380px) { .accesos { grid-template-columns:1fr; } .reserva { gap:9px; padding:10px; } .fechaReserva { width:58px; } }
+@media(prefers-reduced-motion:reduce) { .acceso { transition:none; } }

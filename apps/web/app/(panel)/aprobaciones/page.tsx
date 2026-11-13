@@ -1,7 +1,8 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { Encabezado } from '../Encabezado';
 import { api } from '@/lib/api';
+import { Cabecera } from '@/components/ui';
+import { ConPermiso } from '@/components/Panel';
 
 interface Pendiente {
   id: string;
@@ -19,7 +20,7 @@ const fecha = (d: string) => new Date(d).toLocaleString('es-CL', { dateStyle: 's
  * Bandeja de aprobación (R4, D11). Muestra solo las solicitudes que le corresponden a este usuario
  * según las reglas configuradas. Una serie semanal se decide de una vez (D14).
  */
-export default function Aprobaciones() {
+function Aprobaciones() {
   const [items, setItems] = useState<Pendiente[]>([]);
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
   const cargar = useCallback(
@@ -47,8 +48,7 @@ export default function Aprobaciones() {
 
   return (
     <>
-      <Encabezado />
-      <main>
+      <Cabecera miga="Reservas" titulo="Aprobaciones" sub="Solicitudes que su rol puede aprobar según las reglas del ITN (R4)." />
         <section className="card">
           <h2>Solicitudes pendientes</h2>
           {msg && <p className={msg.ok ? 'ok' : 'error'}>{msg.texto}</p>}
@@ -84,7 +84,10 @@ export default function Aprobaciones() {
             </table>
           )}
         </section>
-      </main>
     </>
   );
+}
+
+export default function Pagina() {
+  return <ConPermiso permiso="reserva:aprobar"><Aprobaciones /></ConPermiso>;
 }

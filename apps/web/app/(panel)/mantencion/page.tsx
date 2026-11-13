@@ -1,7 +1,8 @@
 'use client';
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Encabezado } from '../Encabezado';
 import { api } from '@/lib/api';
+import { Cabecera } from '@/components/ui';
+import { ConPermiso } from '@/components/Panel';
 
 interface Persona { nombres: string; apellido_paterno: string }
 interface Danio {
@@ -58,7 +59,7 @@ function Dialogo({ titulo, children, onCerrar }: { titulo: string; children: Rea
  * daños reportados → órdenes de trabajo (asignar, en proceso, resolver) y mantención preventiva
  * con bloqueo de la sala, que respeta las reservas existentes igual que cualquier otra reserva.
  */
-export default function Mantencion() {
+function Mantencion() {
   const [danios, setDanios] = useState<Danio[]>([]);
   const [ordenes, setOrdenes] = useState<Orden[]>([]);
   const [personal, setPersonal] = useState<Personal[]>([]);
@@ -103,8 +104,7 @@ export default function Mantencion() {
 
   return (
     <>
-      <Encabezado />
-      <main style={{ display: 'grid', gap: '1rem' }}>
+      <Cabecera miga="Gestión" titulo="Mantención" sub="Daños reportados, órdenes de trabajo y bloqueo de espacios (R15, R17)." />
         {aviso && <p className={aviso.ok ? 'ok' : 'error'} style={{ margin: 0 }}>{aviso.texto}</p>}
 
         <section className="card">
@@ -192,7 +192,6 @@ export default function Mantencion() {
             </div>
           )}
         </section>
-      </main>
 
       {dialogo?.tipo === 'orden' && (
         <FormOrden
@@ -339,4 +338,8 @@ function FormOrden({ preventiva, espacio, reporteIds, espacios, personal, onCerr
       </form>
     </Dialogo>
   );
+}
+
+export default function Pagina() {
+  return <ConPermiso permiso={['danio:gestionar', 'mantencion:planificar']}><Mantencion /></ConPermiso>;
 }

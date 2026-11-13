@@ -9,6 +9,9 @@ import { AuthGuard, Publico, RequierePermiso, UsuarioActual, type UsuarioSesion 
 import { ZodPipe } from '../comun/zod.pipe';
 
 const loginSchema = z.object({ email: z.string().email().toLowerCase(), password: z.string().min(1) });
+const cambioClaveSchema = z
+  .object({ actual: z.string().min(1, 'Ingrese su contraseña actual'), nueva: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres') })
+  .refine((d) => d.actual !== d.nueva, { message: 'La nueva contraseña debe ser distinta de la actual', path: ['nueva'] });
 
 /** Usuarios, roles y acceso (E4 / WBS 1.4.1). */
 @Controller()
@@ -49,6 +52,17 @@ class UsuariosController {
   @Get('auth/yo')
   yo(@UsuarioActual() u: UsuarioSesion) {
     return u;
+  }
+
+  /** Cambio de contraseña desde "Mi cuenta": exige la contraseña actual. */
+  @Post('auth/cambiar-clave')
+  async cambiarClave(@Body(new ZodPipe(cambioClaveSchema)) dto: z.infer<typeof cambioClaveSchema>, @UsuarioActual() u: UsuarioSesion) {
+    const usuario = await this.prisma.usuario.findUnique({ where: { id: u.id } });
+    if (!usuario?.password_hash || !(await bcrypt.compare(dto.actual, usuario.password_hash))) {
+      throw new BadRequestException('La contraseña actual no es correcta');
+    }
+    await this.prisma.usuario.update({ where: { id: u.id }, data: { password_hash: await bcrypt.hash(dto.nueva, 10) } });
+    return { cambiada: true };
   }
 
   @RequierePermiso('usuario:gestionar')

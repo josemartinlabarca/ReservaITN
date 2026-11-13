@@ -2,8 +2,7 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { ROLES, espacioCreateSchema, espacioUpdateSchema, usuarioCreateSchema, usuarioUpdateSchema, type Rol } from '@reservaitn/shared';
 import QRCode from 'qrcode';
-import { Encabezado } from '../Encabezado';
-import { api, sesion } from '@/lib/api';
+import { api } from '@/lib/api';
 
 interface Edificio { id: string; codigo: string; nombre: string }
 interface Sede { id: string; codigo: string; nombre: string; edificio: Edificio[] }
@@ -55,32 +54,10 @@ function Dialogo({ titulo, children, onCerrar }: { titulo: string; children: Rea
   );
 }
 
-/** Administración de espacios (WBS 1.4.2) y usuarios con roles y ámbito (WBS 1.4.1, D2). */
-export default function Administracion() {
-  const permisos = sesion()?.usuario.permisos ?? [];
-  const puedeEspacios = permisos.includes('recurso:gestionar');
-  const puedeUsuarios = permisos.includes('usuario:gestionar');
-  const [pestana, setPestana] = useState<'espacios' | 'usuarios'>(puedeEspacios ? 'espacios' : 'usuarios');
-
-  return (
-    <>
-      <Encabezado />
-      <main style={{ display: 'grid', gap: '1rem' }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {puedeEspacios && <button className={pestana === 'espacios' ? '' : 'sec'} onClick={() => setPestana('espacios')}>Espacios</button>}
-          {puedeUsuarios && <button className={pestana === 'usuarios' ? '' : 'sec'} onClick={() => setPestana('usuarios')}>Usuarios</button>}
-        </div>
-        {!puedeEspacios && !puedeUsuarios && <p className="error">Su rol no tiene acceso a la administración.</p>}
-        {pestana === 'espacios' && puedeEspacios && <AdminEspacios />}
-        {pestana === 'usuarios' && puedeUsuarios && <AdminUsuarios />}
-      </main>
-    </>
-  );
-}
 
 /* ───────────────────────────── Espacios ───────────────────────────── */
 
-function AdminEspacios() {
+export function AdminEspacios() {
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [tipos, setTipos] = useState<Catalogo[]>([]);
@@ -283,7 +260,7 @@ function FormEspacio({ espacio, sedes, tipos, items, onCerrar, onGuardado }: {
 
 /* ───────────────────────────── Usuarios ───────────────────────────── */
 
-function AdminUsuarios() {
+export function AdminUsuarios() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [carreras, setCarreras] = useState<Catalogo[]>([]);
   const [sedes, setSedes] = useState<Sede[]>([]);

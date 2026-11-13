@@ -230,8 +230,8 @@ export class ReservasService {
         fin: true,
         estado: true,
         expira_en: true,
-        espacio: { select: { codigo: true, nombre: true } },
-        solicitud: { select: { id: true, descripcion: true } },
+        espacio: { select: { codigo: true, nombre: true, edificio: { select: { sede: { select: { nombre: true } } } } } },
+        solicitud: { select: { id: true, descripcion: true, asistentes: true, origen: true } },
         check_in: { select: { registrado_en: true } },
         cancelacion: { select: { motivo: true, cancelado_en: true } },
       },
@@ -254,7 +254,26 @@ export class ReservasService {
       select: { operacion: true, actor_usuario_id: true, ocurrido_en: true, datos_despues: true },
       orderBy: { id: 'asc' },
     });
-    return { ...traza, eventos };
+    // Línea de tiempo legible para la web: quién hizo qué y cuándo
+    const linea = await this.prisma.$queryRaw<{ momento: Date; accion: string; actor: string | null; comentario: string | null }[]>`
+      WITH r AS (SELECT * FROM reservas.reserva WHERE id = ${reservaId}::uuid)
+      SELECT s.creado_en AS momento, 'CREADA' AS accion, p.nombres || ' ' || p.apellido_paterno AS actor, s.descripcion AS comentario
+        FROM r JOIN reservas.solicitud s ON s.id = r.solicitud_id
+        JOIN seguridad.usuario u ON u.id = s.solicitante_usuario_id JOIN seguridad.persona p ON p.id = u.persona_id
+      UNION ALL
+      SELECT a.decidido_en, a.decision::text, coalesce(p.nombres || ' ' || p.apellido_paterno, 'Aprobación automática'), a.comentario
+        FROM r JOIN reservas.aprobacion a ON a.solicitud_id = r.solicitud_id
+        LEFT JOIN seguridad.usuario u ON u.id = a.decidido_por_usuario_id LEFT JOIN seguridad.persona p ON p.id = u.persona_id
+      UNION ALL
+      SELECT c.registrado_en, 'CHECK_IN', NULL, c.metodo::text FROM r JOIN reservas.check_in c ON c.reserva_id = r.id
+      UNION ALL
+      SELECT x.cancelado_en, 'CANCELADA', p.nombres || ' ' || p.apellido_paterno, x.motivo
+        FROM r JOIN reservas.cancelacion x ON x.reserva_id = r.id
+        JOIN seguridad.usuario u ON u.id = x.usuario_id JOIN seguridad.persona p ON p.id = u.persona_id
+      UNION ALL
+      SELECT r.actualizado_en, r.estado::text, 'Sistema', NULL FROM r WHERE r.estado IN ('EXPIRADA', 'LIBERADA')
+      ORDER BY 1`;
+    return { ...traza, eventos, linea };
   }
 
   /** Fechas de la reserva o de la serie semanal, omitiendo los días no hábiles de la sede (D13). */

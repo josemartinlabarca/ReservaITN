@@ -39,26 +39,27 @@ flowchart LR
 |---|---|---|---|
 | POST | `/api/auth/login` | público | R19; devuelve roles con ámbito y permisos calculados por la base |
 | GET | `/api/auth/yo` | sesión | — |
+| POST | `/api/auth/cambiar-clave` (`actual`, `nueva` ≥ 8 caracteres) | sesión | E4 (Mi cuenta) |
 | GET/POST | `/api/usuarios` | `usuario:gestionar` | E4: persona + cuenta + roles en una transacción |
 | PATCH | `/api/usuarios/:id` (estado, roles, contraseña) | `usuario:gestionar` | E4: no permite bloquearse ni quitarse el permiso a sí mismo |
-| GET | `/api/sedes`, `/api/espacios?sedeId&tipo`, `/api/catalogos` | sesión | R3 |
+| GET | `/api/sedes`, `/api/espacios?sedeId&tipo`, `/api/catalogos` (tipos, ítems y períodos abiertos) | sesión | R3, R9 |
 | POST | `/api/espacios` | `recurso:gestionar` | E5 |
 | PATCH | `/api/espacios/:id` (datos, equipamiento, activo, reservable) | `recurso:gestionar` | E5: no desactiva un espacio con reservas futuras |
 | GET | `/api/espacios?todos=true`, `/api/carreras` | `recurso:gestionar` / sesión | E5 |
 | POST | `/api/importaciones` (multipart: `archivo`, `periodo`) | `planificacion:importar` | R9, E5 |
-| GET | `/api/importaciones` | `planificacion:importar` | R9 |
+| GET | `/api/importaciones` (últimas 20, con período, responsable y % correcto) | `planificacion:importar` | R9 |
 | POST | `/api/reservas` (única o semanal con `repetirHasta`) | `reserva:solicitar` | R1, R2, R4, R11, D11–D13 |
 | GET | `/api/reservas/ocupacion?desde&hasta&espacioId`, `/api/reservas/mias` | sesión | R3 |
 | POST | `/api/reservas/:id/cancelar` (`motivo`, obligatorio si la reserva es de otra persona) | propia o `reserva:cancelar_cualquiera` | R5, R7 (queda en `reservas.cancelacion`) |
 | POST | `/api/reservas/check-in` (`token` del QR) | sesión | R18, D15 |
-| GET | `/api/reservas/:id/historial` | sesión | R7 (vista de trazabilidad + bitácora) |
+| GET | `/api/reservas/:id/historial` | sesión | R7 (vista de trazabilidad + bitácora + `linea` legible: solicitud, decisión, check-in, cancelación) |
 | GET | `/api/solicitudes/pendientes` | `reserva:aprobar` | R4: solo las que `reservas.puede_aprobar` permite |
 | POST | `/api/solicitudes/:id/aprobar`, `/rechazar` (motivo obligatorio) | `reserva:aprobar` | R4, R6, D14 |
 | POST | `/api/sugerencia` | `reserva:solicitar` | R10 |
 | GET | `/api/dashboard/ocupacion`, `/api/dashboard/indicadores`, `/api/dashboard/reservas` | `dashboard:ver` | R12, R13, R7, B3, B6 |
 | GET | `/api/dashboard/reporte.xlsx?desde&hasta&sedeId` | `reporte:generar` | R13: Excel con resumen, ocupación por espacio, detalle de reservas y uso por jornada |
 | GET | `/api/proyeccion` | `dashboard:ver` | R14 |
-| GET/PATCH | `/api/notificaciones/mias`, `/:id/leida` | sesión | R6 |
+| GET/PATCH | `/api/notificaciones/mias`, `/no-leidas`, `/:id/leida`, `/leidas` (todas) | sesión | R6 |
 | POST | `/api/mantencion/inspecciones` | `inventario:registrar` | R17, D17 |
 | POST/GET | `/api/mantencion/danios` | `danio:reportar` / `danio:gestionar` | R17 |
 | GET/POST/PATCH | `/api/mantencion/ordenes` (bloqueo opcional de la sala; al cerrar la orden, el bloqueo restante se libera) | `danio:gestionar` | R15, D16 |

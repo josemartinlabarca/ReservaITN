@@ -1,8 +1,9 @@
 'use client';
 import { useEffect, useState, type FormEvent } from 'react';
-import { Encabezado } from '../Encabezado';
 import { api, descargar, sesion } from '@/lib/api';
-import { DialogoMotivo } from '../DialogoMotivo';
+import { DialogoMotivo } from '@/components/DialogoMotivo';
+import { Cabecera } from '@/components/ui';
+import { ConPermiso } from '@/components/Panel';
 
 interface FilaSala { espacioId: string; codigo: string; nombre: string; sede: string; tipo: string; horasReservadas: number; indice: number }
 interface Ocupacion {
@@ -61,7 +62,7 @@ const fechaCorta = (d: string) => new Date(d).toLocaleString('es-CL', { weekday:
 const horaCorta = (d: string) => new Date(d).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 
 /** Dashboard de ocupación (R12, WBS 1.4.7), reporte desde–hasta (R13) y proyección de uso (R14, WBS 1.4.8). */
-export default function Dashboard() {
+function Dashboard() {
   // Por defecto, del inicio del mes actual al fin del mes siguiente: incluye lo ya ocurrido y lo agendado
   const [rango, setRango] = useState(() => {
     const h = new Date();
@@ -130,8 +131,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <Encabezado />
-      <main style={{ display: 'grid', gap: '1rem' }}>
+      <Cabecera miga="Análisis" titulo="Dashboard y reportes" sub="Ocupación, indicadores y reservas del período, con exportación a Excel (R12, R13)." />
         <form className="fila" onSubmit={aplicar} key={`${rango.desde}-${rango.hasta}`}>
           <label>Desde<input type="date" name="desde" defaultValue={rango.desde} /></label>
           <label>Hasta (incluido)<input type="date" name="hasta" defaultValue={rango.hasta} /></label>
@@ -252,7 +252,6 @@ export default function Dashboard() {
             )}
           </>
         )}
-      </main>
       {aCancelar && (
         <DialogoMotivo
           titulo="Cancelar reserva"
@@ -264,4 +263,8 @@ export default function Dashboard() {
       )}
     </>
   );
+}
+
+export default function Pagina() {
+  return <ConPermiso permiso="dashboard:ver"><Dashboard /></ConPermiso>;
 }
