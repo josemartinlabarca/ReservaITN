@@ -1,0 +1,36 @@
+# Render Blueprint: API de ReservaITN (NestJS) para la demostración en la nube.
+# La web va en Vercel (apps/web/vercel.json) y la base de datos en Neon. Guía: docs/08-despliegue.md
+services:
+  - type: web
+    name: reservaitn-api
+    runtime: node
+    plan: free
+    region: oregon
+    branch: feat/api-modelo-v1
+    buildCommand: >-
+      corepack enable &&
+      pnpm install --frozen-lockfile --filter "@reservaitn/api..." --filter "@reservaitn/db..." &&
+      pnpm --filter @reservaitn/shared build &&
+      pnpm --filter @reservaitn/api build
+    # Aplica las migraciones pendientes (y los datos de demostración si MIGRAR_OPCIONES=--demo) antes de iniciar
+    startCommand: node packages/db/scripts/migrar.mjs $MIGRAR_OPCIONES && node apps/api/dist/main.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TZ
+        value: America/Santiago
+      - key: DATABASE_URL # cadena de Neon (conexión directa, con ?sslmode=require)
+        sync: false
+      - key: CORS_ORIGIN # URL de la web en Vercel, p. ej. https://reservaitn.vercel.app
+        sync: false
+      - key: WEB_URL # misma URL, para los botones de los correos
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MIGRAR_OPCIONES # --demo carga cuentas y reservas de ejemplo; --semillas solo catálogos
+        value: --demo
+      - key: SMTP_URL # opcional; sin él los correos quedan en cola
+        sync: false
+      - key: SMTP_FROM
+        value: ReservaITN <no-responder@itn.cl>

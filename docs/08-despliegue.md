@@ -81,3 +81,57 @@ servicios gestionados habituales).
 | `WEB_URL` | API | URL pública de la web (botones de los correos) |
 | `NEXT_PUBLIC_API_URL` | Web | URL pública de la API |
 | `EXPO_PUBLIC_API_URL` | Móvil | URL pública de la API |
+
+## Demostración en la nube (Vercel + Render + Neon)
+
+Para mostrar el sistema al cliente y al docente antes de la puesta en marcha, sin costo. No reemplaza la
+infraestructura de producción de arriba.
+
+| Pieza | Servicio (plan gratis) | Configuración en el repositorio |
+|---|---|---|
+| Web (Next.js) | Vercel | `apps/web/vercel.json` |
+| API (NestJS) | Render | `render.yaml` |
+| Base de datos (PostgreSQL 16) | Neon | Las migraciones las aplica la API al iniciar |
+
+Limitación del plan gratis de Render: la API se duerme tras 15 minutos sin uso y la primera visita tarda
+cerca de un minuto en despertarla. Abrir la web unos minutos antes de una presentación.
+
+### 1. Base de datos en Neon
+
+1. En [neon.tech](https://neon.tech), crear el proyecto `reservaitn` con PostgreSQL 16, región AWS São Paulo
+   (`sa-east-1`) o la más cercana.
+2. Copiar la cadena de conexión **directa** (sin `-pooler` en el host). Termina en `?sslmode=require`.
+
+### 2. API en Render
+
+1. En [render.com](https://render.com): **New → Blueprint**, elegir el repositorio `ReservaITN`. Render lee
+   `render.yaml` y crea el servicio `reservaitn-api`.
+2. Completar las variables que pide:
+   - `DATABASE_URL`: la cadena de Neon.
+   - `CORS_ORIGIN` y `WEB_URL`: la URL de Vercel (se conoce en el paso 3; mientras tanto, cualquier valor).
+   - `SMTP_URL`: opcional. Sin ella, los avisos quedan en la web y en el celular, pero no salen correos.
+3. Esperar el primer despliegue y abrir `https://<servicio>.onrender.com/api/health`: debe responder
+   `{"ok":true}`. El primer inicio crea las tablas y las cuentas de demostración (`MIGRAR_OPCIONES=--demo`).
+
+### 3. Web en Vercel
+
+1. En [vercel.com](https://vercel.com): **Add New → Project**, importar el repositorio `ReservaITN`.
+2. **Root Directory**: `apps/web` (Vercel detecta Next.js y usa `vercel.json`).
+3. Variables de entorno:
+   - `NEXT_PUBLIC_API_URL` = `https://<servicio>.onrender.com/api`
+   - `NEXT_PUBLIC_MOSTRAR_DEMO` = `true` (muestra los botones de cuentas de demostración en el login)
+4. En **Settings → Git → Production Branch**, poner `feat/api-modelo-v1` mientras no se integre a `main`.
+5. Desplegar. Copiar la URL final (por ejemplo `https://reservaitn.vercel.app`), volver a Render y ponerla
+   en `CORS_ORIGIN` y `WEB_URL`. Render redespliega solo.
+
+### 4. App móvil apuntando a la nube
+
+En `apps/mobile/.env`: `EXPO_PUBLIC_API_URL=https://<servicio>.onrender.com/api`. Así se prueba desde
+cualquier red, sin que el celular esté en el mismo wifi que el computador.
+
+### Seguridad de la demostración
+
+- Las cuentas de demostración usan la contraseña pública `reservaitn`: es solo para mostrar el sistema,
+  sin datos reales de personas.
+- Para producción: `MIGRAR_OPCIONES=--semillas` (sin datos de demostración), `NEXT_PUBLIC_MOSTRAR_DEMO`
+  sin definir y un `JWT_SECRET` propio.

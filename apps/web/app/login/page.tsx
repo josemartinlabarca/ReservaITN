@@ -111,9 +111,9 @@ export default function Login() {
             </button>
           </form>
 
-          {process.env.NODE_ENV !== 'production' && (
+          {(process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_MOSTRAR_DEMO === 'true') && (
             <div className={styles.demo}>
-              <p>Cuentas de demostración (entorno de desarrollo · contraseña <strong>{CLAVE_DEMO}</strong>)</p>
+              <p>Cuentas de demostración (contraseña <strong>{CLAVE_DEMO}</strong>)</p>
               <div className={styles.chipsDemo}>
                 {DEMO.map(([correo, texto]) => (
                   <button key={correo} type="button" className={`${styles.chipDemo} ${email === correo ? styles.chipActivo : ''}`} onClick={() => { setEmail(correo); setPassword(CLAVE_DEMO); setError(''); }}>

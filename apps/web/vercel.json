@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "pnpm install --frozen-lockfile --filter @reservaitn/web...",
+  "buildCommand": "pnpm --filter @reservaitn/shared build && next build"
+}
